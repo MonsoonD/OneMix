@@ -1,3 +1,30 @@
+<?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+$dsn = 'mysql:dbname=onemix;host=127.0.0.1';
+$user = 'root';
+$password = '';
+$pdo = new PDO($dsn, $user, $password);
+if( count($_POST) > 0 ) {
+    
+    $email = $_POST['email'];
+    $password = $_POST['password'];
+    
+    $sql = "SELECT * FROM users WHERE email = ?";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user && password_verify($password, $user['password'])) {
+        echo "Login successful!";
+    } else {
+        echo "Invalid email or password!";
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en" data-x="html" data-x-toggle="html-overflow-hidden">
 
@@ -162,25 +189,25 @@
         <div class="row justify-center">
           <div class="col-xl-6 col-lg-7 col-md-9">
             <div class="px-50 py-50 sm:px-20 sm:py-20 bg-white shadow-4 rounded-4">
-              <div class="row y-gap-20">
+              <div class="row y-gap-20 mb-3">
                 <div class="col-12">
                   <h1 class="text-22 fw-500">Welcome back</h1>
-                  <p class="mt-10">Don't have an account yet? <a href="signup.html" class="text-blue-1">Sign up for free</a></p>
+                  <p class="mt-10">Don't have an account yet? <a href="signup.php" class="text-blue-1">Sign up for free</a></p>
                 </div>
 
-                <div class="col-12">
+                <form action="login.php" method="POST">
+                <div class="col-12 mb-3">
 
                   <div class="form-input ">
-                    <input type="text" required>
+                    <input type="text" name="email" required>
                     <label class="lh-1 text-14 text-light-1">Email</label>
                   </div>
 
                 </div>
-
                 <div class="col-12">
 
                   <div class="form-input ">
-                    <input type="password" required>
+                    <input type="password" name="password" required>
                     <label class="lh-1 text-14 text-light-1">Password</label>
                   </div>
 
@@ -192,9 +219,9 @@
 
                 <div class="col-12">
 
-                  <a href="#" class="button py-20 -dark-1 bg-blue-1 text-white">
+                  <button type="submit" class="button py-20 -dark-1 bg-blue-1 text-white mx-auto d-block" style="width: 530px;">
                     Sign In <div class="icon-arrow-top-right ml-15"></div>
-                  </a>
+                  </button>
 
                 </div>
               </div>
@@ -217,6 +244,7 @@
                     <i class="icon-apple text-15 mr-10"></i>
                     Apple
                   </button>
+                  </form>
                 </div>
 
                 <div class="col-12">

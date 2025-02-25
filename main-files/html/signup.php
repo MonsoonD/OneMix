@@ -1,3 +1,29 @@
+<?php
+
+$dsn = 'mysql:dbname=onemix;host=127.0.0.1';
+$user = 'root';
+$password = '';
+$pdo = new PDO($dsn, $user, $password);
+if( count($_POST) > 0 ) {
+    
+    $profile = $_POST['profile'];
+    $firstName = $_POST['first_name'];
+    $lastName = $_POST['last_name'];
+    $email = $_POST['email'];
+    $password = $_POST['password'];
+    $confirmPassword = $_POST['confirm_password'];
+    if ($password !== $confirmPassword) {
+        die("Passwords do not match.");
+    }
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    $sql = "INSERT INTO users (profile, first_name, last_name, email, password) VALUES (?, ?, ?, ?, ?)";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$profile, $firstName, $lastName, $email, $hashedPassword]);
+    echo "Registration successful!";
+
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en" data-x="html" data-x-toggle="html-overflow-hidden">
 
@@ -162,81 +188,85 @@
         <div class="row justify-center">
           <div class="col-xl-6 col-lg-7 col-md-9">
             <div class="px-50 py-50 sm:px-20 sm:py-20 bg-white shadow-4 rounded-4">
-              <div class="row y-gap-20">
-                <div class="col-12">
-                  <h1 class="text-22 fw-500">Sign in or create an account</h1>
-                  <p class="mt-10">Already have an account? <a href="login.php" class="text-blue-1">Log in</a></p>
-                </div>
+            <div class="row y-gap-20 mb-3">
+          <div class="col-12">
+              <h1 class="text-22 fw-500">Sign in or create an account</h1>
+              <p class="mt-10">Already have an account? <a href="login.php" class="text-blue-1">Log in</a></p>
+          </div>
 
-                <div class="col-12">
+    <form action="signup.php" method="POST">
+        <!-- Champ pour le profil (artist ou studio) -->
+        <div class="col-12">
+            <div class="form-input">
+                <label class="lh-1 text-14 text-light-1">Profile Type</label>
+                <select name="profile" required>
+                    <option value="artist">Artist</option>
+                    <option value="studio">Studio</option>
+                </select>
+            </div>
+        </div>
 
-                  <div class="form-input ">
-                    <input type="text" required>
-                    <label class="lh-1 text-14 text-light-1">First Name</label>
-                  </div>
+        <!-- Champ pour le prénom -->
+        <div class="col-12">
+            <div class="form-input">
+                <input type="text" name="first_name" required>
+                <label class="lh-1 text-14 text-light-1">First Name</label>
+            </div>
+        </div>
 
-                </div>
+        <!-- Champ pour le nom de famille -->
+        <div class="col-12">
+            <div class="form-input">
+                <input type="text" name="last_name" required>
+                <label class="lh-1 text-14 text-light-1">Last Name</label>
+            </div>
+        </div>
 
-                <div class="col-12">
+        <!-- Champ pour l'e-mail -->
+        <div class="col-12">
+            <div class="form-input">
+                <input type="email" name="email" required>
+                <label class="lh-1 text-14 text-light-1">Email</label>
+            </div>
+        </div>
 
-                  <div class="form-input ">
-                    <input type="text" required>
-                    <label class="lh-1 text-14 text-light-1">Last Name</label>
-                  </div>
+        <!-- Champ pour le mot de passe -->
+        <div class="col-12">
+            <div class="form-input">
+                <input type="password" name="password" required>
+                <label class="lh-1 text-14 text-light-1">Password</label>
+            </div>
+        </div>
 
-                </div>
+        <!-- Champ pour confirmer le mot de passe -->
+        <div class="col-12">
+            <div class="form-input">
+                <input type="password" name="confirm_password" required>
+                <label class="lh-1 text-14 text-light-1">Confirm Password</label>
+            </div>
+        </div>
 
-                <div class="col-12">
-
-                  <div class="form-input ">
-                    <input type="text" required>
-                    <label class="lh-1 text-14 text-light-1">Email</label>
-                  </div>
-
-                </div>
-
-                <div class="col-12">
-
-                  <div class="form-input ">
-                    <input type="password" required>
-                    <label class="lh-1 text-14 text-light-1">Password</label>
-                  </div>
-
-                </div>
-
-                <div class="col-12">
-
-                  <div class="form-input ">
-                    <input type="password" required>
-                    <label class="lh-1 text-14 text-light-1">Confirm Password</label>
-                  </div>
-
-                </div>
-
-                <div class="col-12">
-
-                  <div class="d-flex ">
-                    <div class="form-checkbox mt-5">
-                      <input type="checkbox" name="name">
-                      <div class="form-checkbox__mark">
+        <!-- Case à cocher pour les promotions -->
+        <div class="col-12">
+            <div class="d-flex">
+                <div class="form-checkbox mt-5">
+                    <input type="checkbox" name="promotions">
+                    <div class="form-checkbox__mark">
                         <div class="form-checkbox__icon icon-check"></div>
-                      </div>
                     </div>
-
-                    <div class="text-15 lh-15 text-light-1 ml-10">Email me exclusive Agoda promotions. I can opt out later as stated in the Privacy Policy.</div>
-
-                  </div>
-
                 </div>
+                <div class="text-15 lh-15 text-light-1 ml-10">Email me exclusive promotions. I can opt out later as stated in the Privacy Policy.</div>
+            </div>
+        </div>
 
-                <div class="col-12">
-
-                  <a href="#" class="button py-20 -dark-1 bg-blue-1 text-white">
-                    Sign In <div class="icon-arrow-top-right ml-15"></div>
-                  </a>
-
-                </div>
-              </div>
+        <!-- Bouton de soumission -->
+        <div class="col-12">
+            <button type="submit" class="button py-20 -dark-1 bg-blue-1 text-white mx-auto d-block" style="width: 530px;">
+                Sign Up <div class="icon-arrow-top-right ml-15"></div>
+            </button>
+        </div>
+    </form>
+</div>
 
               <div class="row y-gap-20 pt-30">
                 <div class="col-12">

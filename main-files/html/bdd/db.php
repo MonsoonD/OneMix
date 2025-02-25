@@ -1,5 +1,5 @@
 <?php
-$host = "127.0.0.1:8889";
+$host = "127.0.0.1:80";
 $dbname = "onemix";
 $username = "root";
 $password = "root";
