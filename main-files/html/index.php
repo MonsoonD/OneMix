@@ -1,4 +1,12 @@
+<?php
+session_start(); // Démarrer la session
 
+if (isset($_SESSION['user'])) {
+    // L'utilisateur est connecté
+    $user = $_SESSION['user'];
+
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en" data-x="html" data-x-toggle="html-overflow-hidden">

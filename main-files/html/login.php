@@ -1,4 +1,6 @@
 <?php
+session_start(); // Démarrer la session
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -6,21 +8,35 @@ error_reporting(E_ALL);
 $dsn = 'mysql:dbname=onemix;host=127.0.0.1';
 $user = 'root';
 $password = '';
-$pdo = new PDO($dsn, $user, $password);
-if( count($_POST) > 0 ) {
-    
+
+try {
+    $pdo = new PDO($dsn, $user, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // Activer les exceptions PDO
+} catch (PDOException $e) {
+    die("Erreur de connexion à la base de données : " . $e->getMessage());
+}
+
+if (count($_POST) > 0) {
     $email = $_POST['email'];
     $password = $_POST['password'];
-    
+
     $sql = "SELECT * FROM users WHERE email = ?";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($user && password_verify($password, $user['password'])) {
-        echo "Login successful!";
+    if ($user) {
+        echo "Utilisateur trouvé : " . print_r($user, true); // Affiche les données de l'utilisateur
+        if (password_verify($password, $user['password'])) {
+            echo "Mot de passe correct !";
+            $_SESSION['user'] = $user; // Stocker les informations de l'utilisateur dans la session
+            header('Location: index.php'); // Rediriger vers index.php
+            exit();
+        } else {
+            echo "Mot de passe incorrect.";
+        }
     } else {
-        echo "Invalid email or password!";
+        echo "Aucun utilisateur trouvé avec cet email.";
     }
 }
 ?>
@@ -196,56 +212,49 @@ if( count($_POST) > 0 ) {
                 </div>
 
                 <form action="login.php" method="POST">
-                <div class="col-12 mb-3">
-
-                  <div class="form-input ">
-                    <input type="text" name="email" required>
-                    <label class="lh-1 text-14 text-light-1">Email</label>
+                  <div class="col-12 mb-3">
+                      <div class="form-input">
+                          <input type="text" name="email" required>
+                          <label class="lh-1 text-14 text-light-1">Email</label>
+                      </div>
                   </div>
-
-                </div>
-                <div class="col-12">
-
-                  <div class="form-input ">
-                    <input type="password" name="password" required>
-                    <label class="lh-1 text-14 text-light-1">Password</label>
+                  <div class="col-12">
+                      <div class="form-input">
+                          <input type="password" name="password" required>
+                          <label class="lh-1 text-14 text-light-1">Password</label>
+                      </div>
                   </div>
-
-                </div>
-
-                <div class="col-12">
-                  <a href="#" class="text-14 fw-500 text-blue-1 underline">Forgot your password?</a>
-                </div>
-
-                <div class="col-12">
-
-                  <button type="submit" class="button py-20 -dark-1 bg-blue-1 text-white mx-auto d-block" style="width: 530px;">
-                    Sign In <div class="icon-arrow-top-right ml-15"></div>
-                  </button>
-
-                </div>
-              </div>
+                  <div class="col-12">
+                      <a href="#" class="text-14 fw-500 text-blue-1 underline">Forgot your password?</a>
+                  </div>
+                  <div class="col-12">
+                      <button type="submit" class="button py-20 -dark-1 bg-blue-1 text-white mx-auto d-block" style="width: 530px;">
+                          Sign In <div class="icon-arrow-top-right ml-15"></div>
+                      </button>
+                  </div>
+                </form>
 
               <div class="row y-gap-20 pt-30">
-                <div class="col-12">
-                  <div class="text-center">or sign in with</div>
+                  <div class="col-12">
+                      <div class="text-center">or sign in with</div>
+                      <button class="button col-12 -outline-blue-1 text-blue-1 py-15 rounded-8 mt-10">
+                          <i class="icon-apple text-15 mr-10"></i>
+                          Facebook
+                      </button>
+                      <button class="button col-12 -outline-red-1 text-red-1 py-15 rounded-8 mt-15">
+                          <i class="icon-apple text-15 mr-10"></i>
+                          Google
+                      </button>
+                      <button class="button col-12 -outline-dark-2 text-dark-2 py-15 rounded-8 mt-15">
+                          <i class="icon-apple text-15 mr-10"></i>
+                          Apple
+                      </button>
+                  </div>
+              </div>
 
-                  <button class="button col-12 -outline-blue-1 text-blue-1 py-15 rounded-8 mt-10">
-                    <i class="icon-apple text-15 mr-10"></i>
-                    Facebook
-                  </button>
-
-                  <button class="button col-12 -outline-red-1 text-red-1 py-15 rounded-8 mt-15">
-                    <i class="icon-apple text-15 mr-10"></i>
-                    Google
-                  </button>
-
-                  <button class="button col-12 -outline-dark-2 text-dark-2 py-15 rounded-8 mt-15">
-                    <i class="icon-apple text-15 mr-10"></i>
-                    Apple
-                  </button>
-                  </form>
-                </div>
+              <?php if (isset($_SESSION['user'])): ?>
+                  <a href="logout.php" class="button px-30 fw-400 text-14 border-white -outline-white h-50 text-white ml-20">Déconnexion</a>
+              <?php endif; ?>
 
                 <div class="col-12">
                   <div class="text-center px-30">By creating an account, you agree to our Terms of Service and Privacy Statement.</div>
