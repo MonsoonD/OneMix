@@ -46,7 +46,7 @@
     <header data-add-bg="" class="header -dashboard bg-white js-header" data-x="header" data-x-toggle="is-menu-opened">
       <div data-anim="fade" class="header__container px-30 sm:px-20">
         <div class="-left-side">
-          <a href="index.html" class="header-logo" data-x="header-logo" data-x-toggle="is-logo-dark">
+          <a href="index.php" class="header-logo" data-x="header-logo" data-x-toggle="is-logo-dark">
             <img src="img/general/logo-dark.svg" alt="logo icon">
             <img src="img/general/logo-dark.svg" alt="logo icon">
           </a>
@@ -89,10 +89,10 @@
   
                         <ul class="subnav">
                           <li class="subnav__backBtn js-nav-list-back">
-                            <a href="index.html"><i class="icon icon-chevron-sm-down"></i> Home</a>
+                            <a href="index.php"><i class="icon icon-chevron-sm-down"></i> Home</a>
                           </li>
   
-                          <li><a href="index.html">Home</a></li>
+                          <li><a href="index.php">Home</a></li>
                         </ul>
   
                       

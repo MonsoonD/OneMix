@@ -165,7 +165,7 @@
               <div class="row y-gap-20">
                 <div class="col-12">
                   <h1 class="text-22 fw-500">Sign in or create an account</h1>
-                  <p class="mt-10">Already have an account? <a href="login.html" class="text-blue-1">Log in</a></p>
+                  <p class="mt-10">Already have an account? <a href="login.php" class="text-blue-1">Log in</a></p>
                 </div>
 
                 <div class="col-12">

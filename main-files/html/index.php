@@ -106,12 +106,12 @@
 
 
             <div class="d-flex items-center ml-20 is-menu-opened-hide md:d-none">
-              <a href="login.html" class="button px-30 fw-400 text-14 -white bg-white h-50 text-dark-1">Become A Confirmed Studio</a>
-              <a href="signup.html" class="button px-30 fw-400 text-14 border-white -outline-white h-50 text-white ml-20">Sign In / Register</a>
+              <a href="login.php" class="button px-30 fw-400 text-14 -white bg-white h-50 text-dark-1">Become A Confirmed Studio</a>
+              <a href="signup.php" class="button px-30 fw-400 text-14 border-white -outline-white h-50 text-white ml-20">Sign In / Register</a>
             </div>
 
             <div class="d-none xl:d-flex x-gap-20 items-center pl-30 text-white" data-x="header-mobile-icons" data-x-toggle="text-white">
-              <div><a href="login.html" class="d-flex items-center icon-user text-inherit text-22"></a></div>
+              <div><a href="login.php" class="d-flex items-center icon-user text-inherit text-22"></a></div>
               <div><button class="d-flex items-center icon-menu text-inherit text-20" data-x-click="html, header, header-logo, header-mobile-icons, mobile-menu"></button></div>
             </div>
           </div>
