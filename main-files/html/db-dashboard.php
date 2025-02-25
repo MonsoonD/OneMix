@@ -89,10 +89,10 @@
 
                       <ul class="subnav">
                         <li class="subnav__backBtn js-nav-list-back">
-                          <a href="index.html"><i class="icon icon-chevron-sm-down"></i> Home</a>
+                          <a href="index.php"><i class="icon icon-chevron-sm-down"></i> Home</a>
                         </li>
 
-                        <li><a href="index.html">Home</a></li>
+                        <li><a href="index.php">Home</a></li>
                       </ul>
 
                     
@@ -112,10 +112,10 @@
 
                       <ul class="subnav">
                         <li class="subnav__backBtn js-nav-list-back">
-                          <a href="db-dashboard.html"><i class="icon icon-chevron-sm-down"></i> Dashboard</a>
+                          <a href="db-dashboard.php"><i class="icon icon-chevron-sm-down"></i> Dashboard</a>
                         </li>
 
-                        <li><a href="db-dashboard.html">Dashboard</a></li>
+                        <li><a href="db-dashboard.php">Dashboard</a></li>
 
                       </ul>
 
@@ -174,7 +174,7 @@
 
         <div class="sidebar__item">
           <div class="sidebar__button ">
-            <a href="db-booking.html" class="d-flex items-center text-15 lh-1 fw-500">
+            <a href="db-booking.php" class="d-flex items-center text-15 lh-1 fw-500">
               <img src="img/dashboard/sidebar/booking.svg" alt="image" class="mr-15">
               Booking History
             </a>
@@ -183,7 +183,7 @@
 
         <div class="sidebar__item">
           <div class="sidebar__button ">
-            <a href="db-wishlist.html" class="d-flex items-center text-15 lh-1 fw-500">
+            <a href="db-wishlist.php" class="d-flex items-center text-15 lh-1 fw-500">
               <img src="img/dashboard/sidebar/bookmark.svg" alt="image" class="mr-15">
               Wishlist
             </a>
@@ -192,7 +192,7 @@
 
         <div class="sidebar__item">
           <div class="sidebar__button ">
-            <a href="db-settings.html" class="d-flex items-center text-15 lh-1 fw-500">
+            <a href="db-settings.php" class="d-flex items-center text-15 lh-1 fw-500">
               <img src="img/dashboard/sidebar/gear.svg" alt="image" class="mr-15">
               Settings
             </a>
@@ -201,7 +201,7 @@
 
         <div class="sidebar__item">
           <div class="sidebar__button ">
-            <a href="#" class="d-flex items-center text-15 lh-1 fw-500">
+            <a href="index.php" class="d-flex items-center text-15 lh-1 fw-500">
               <img src="img/dashboard/sidebar/log-out.svg" alt="image" class="mr-15">
               Logout
             </a>
