@@ -4,23 +4,36 @@ $dsn = 'mysql:dbname=onemix;host=127.0.0.1';
 $user = 'root';
 $password = '';
 $pdo = new PDO($dsn, $user, $password);
-if( count($_POST) > 0 ) {
-    
-    $profile = $_POST['profile'];
-    $firstName = $_POST['first_name'];
-    $lastName = $_POST['last_name'];
-    $email = $_POST['email'];
-    $password = $_POST['password'];
-    $confirmPassword = $_POST['confirm_password'];
-    if ($password !== $confirmPassword) {
-        die("Passwords do not match.");
-    }
+
+if (count($_POST) > 0) {
+  $error = false;
+  $profile = $_POST['profile'];
+  $firstName = $_POST['first_name'];
+  $lastName = $_POST['last_name'];
+  $email = $_POST['email'];
+  $password = $_POST['password'];
+  $confirmPassword = $_POST['confirm_password'];
+
+  if (empty($profile) || empty($firstName) || empty($lastName) || empty($email) || empty($password) || empty($confirmPassword)) {
+    $error = true;
+    echo "Tous les champs ne sont pas remplis!";
+  }
+
+  if ($password !== $confirmPassword) {
+    $error = true;
+    echo "Les mots de passes diffèrent!";
+  }
+
+  if ($error=false) {
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
     $sql = "INSERT INTO users (profile, first_name, last_name, email, password) VALUES (?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$profile, $firstName, $lastName, $email, $hashedPassword]);
-    echo "Registration successful!";
-
+    echo "Inscription réussie!";
+  }
+  else {
+    echo "Inscription échouée!";
+  }
 }
 ?>
 
