@@ -149,7 +149,7 @@ if (isset($_SESSION['user'])) {
                         <div class="tabs__content mt-30 md:mt-20 js-tabs-content">
                             <div class="tabs__pane -tab-item-1 is-tab-el-active">
                                 <div class="mainSearch -w-900 bg-white px-10 py-10 lg:px-20 lg:pt-5 lg:pb-20 rounded-100">
-                                <form id="searchForm" action="search.php" method="GET">
+                                <form id="searchForm" action="index.php" method="GET">
                                     <div class="button-grid items-center">
                                         <!-- Champ pour la ville -->
                                         <div class="searchMenu-loc px-30 lg:py-20 lg:px-0">
