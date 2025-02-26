@@ -1,8 +1,8 @@
 <?php
 
-$dsn = 'mysql:dbname=onemix;host=127.0.0.1';
+$dsn = 'mysql:dbname=onemix;host=127.0.0.1:8889';
 $user = 'root';
-$password = '';
+$password = 'root';
 $pdo = new PDO($dsn, $user, $password);
 
 if (count($_POST) > 0) {
@@ -196,120 +196,99 @@ if (count($_POST) > 0) {
     </header>
 
 
-    <section class="layout-pt-lg layout-pb-lg bg-blue-2">
-      <div class="container">
-        <div class="row justify-center">
-          <div class="col-xl-6 col-lg-7 col-md-9">
-            <div class="px-50 py-50 sm:px-20 sm:py-20 bg-white shadow-4 rounded-4">
-            <div class="row y-gap-20 mb-3">
-          <div class="col-12">
+<section class="layout-pt-lg layout-pb-lg bg-blue-2">
+  <div class="container">
+    <div class="row justify-center">
+      <div class="col-xl-6 col-lg-7 col-md-9">
+        <div class="px-50 py-50 sm:px-20 sm:py-20 bg-white shadow-4 rounded-4">
+          <!-- Titre et lien de connexion -->
+          <div class="row y-gap-20 mb-3">
+            <div class="col-12">
               <h1 class="text-22 fw-500">Sign in or create an account</h1>
               <p class="mt-10">Already have an account? <a href="login.php" class="text-blue-1">Log in</a></p>
+            </div>
           </div>
 
-    <form action="signup.php" method="POST">
-        <!-- Champ pour le profil (artist ou studio) -->
-        <div class="col-12">
-            <div class="form-input">
-                <label class="lh-1 text-14 text-light-1">Profile Type</label>
+          <!-- Formulaire d'inscription -->
+          <form action="signup.php" method="POST">
+            <!-- Champ pour le type de profil -->
+            <div class="col-12">
+              <div class="form-input">
+
                 <select name="profile" required>
-                    <option value="artist">Artist</option>
-                    <option value="studio">Studio</option>
+                  <option value="artist">Artist</option>
+                  <option value="studio">Studio</option>
                 </select>
-            </div>
-        </div>
-
-        <!-- Champ pour le prénom -->
-        <div class="col-12">
-            <div class="form-input">
-                <input type="text" name="first_name" required>
-                <label class="lh-1 text-14 text-light-1">First Name</label>
-            </div>
-        </div>
-
-        <!-- Champ pour le nom de famille -->
-        <div class="col-12">
-            <div class="form-input">
-                <input type="text" name="last_name" required>
-                <label class="lh-1 text-14 text-light-1">Last Name</label>
-            </div>
-        </div>
-
-        <!-- Champ pour l'e-mail -->
-        <div class="col-12">
-            <div class="form-input">
-                <input type="email" name="email" required>
-                <label class="lh-1 text-14 text-light-1">Email</label>
-            </div>
-        </div>
-
-        <!-- Champ pour le mot de passe -->
-        <div class="col-12">
-            <div class="form-input">
-                <input type="password" name="password" required>
-                <label class="lh-1 text-14 text-light-1">Password</label>
-            </div>
-        </div>
-
-        <!-- Champ pour confirmer le mot de passe -->
-        <div class="col-12">
-            <div class="form-input">
-                <input type="password" name="confirm_password" required>
-                <label class="lh-1 text-14 text-light-1">Confirm Password</label>
-            </div>
-        </div>
-
-        <!-- Case à cocher pour les promotions -->
-        <div class="col-12">
-            <div class="d-flex">
-                <div class="form-checkbox mt-5">
-                    <input type="checkbox" name="promotions">
-                    <div class="form-checkbox__mark">
-                        <div class="form-checkbox__icon icon-check"></div>
-                    </div>
-                </div>
-                <div class="text-15 lh-15 text-light-1 ml-10">Email me exclusive promotions. I can opt out later as stated in the Privacy Policy.</div>
-            </div>
-        </div>
-
-        <!-- Bouton de soumission -->
-        <div class="col-12">
-            <button type="submit" class="button py-20 -dark-1 bg-blue-1 text-white mx-auto d-block" style="width: 530px;">
-                Sign Up <div class="icon-arrow-top-right ml-15"></div>
-            </button>
-        </div>
-    </form>
-</div>
-
-              <div class="row y-gap-20 pt-30">
-                <div class="col-12">
-                  <div class="text-center">or sign in with</div>
-
-                  <button class="button col-12 -outline-blue-1 text-blue-1 py-15 rounded-8 mt-10">
-                    <i class="icon-apple text-15 mr-10"></i>
-                    Facebook
-                  </button>
-
-                  <button class="button col-12 -outline-red-1 text-red-1 py-15 rounded-8 mt-15">
-                    <i class="icon-apple text-15 mr-10"></i>
-                    Google
-                  </button>
-
-                  <button class="button col-12 -outline-dark-2 text-dark-2 py-15 rounded-8 mt-15">
-                    <i class="icon-apple text-15 mr-10"></i>
-                    Apple
-                  </button>
-                </div>
-
-                <div class="col-12">
-                  <div class="text-center px-30">By signing in, I agree to GoTrip Terms of Use and Privacy Policy.</div>
-                </div>
               </div>
             </div>
+
+            <!-- Champ pour le prénom -->
+            <div class="col-12 mt-3">
+              <div class="form-input">
+                <input type="text" name="first_name" required>
+                <label class="lh-1 text-14 text-light-1">First Name</label>
+              </div>
+            </div>
+
+            <!-- Champ pour le nom de famille -->
+            <div class="col-12 mt-3">
+              <div class="form-input">
+                <input type="text" name="last_name" required>
+                <label class="lh-1 text-14 text-light-1">Last Name</label>
+              </div>
+            </div>
+
+            <!-- Champ pour l'e-mail -->
+            <div class="col-12 mt-3">
+              <div class="form-input">
+                <input type="email" name="email" required>
+                <label class="lh-1 text-14 text-light-1">Email</label>
+              </div>
+            </div>
+
+            <!-- Champ pour le mot de passe -->
+            <div class="col-12 mt-3">
+              <div class="form-input">
+                <input type="password" name="password" required>
+                <label class="lh-1 text-14 text-light-1">Password</label>
+              </div>
+            </div>
+
+            <!-- Champ pour confirmer le mot de passe -->
+            <div class="col-12 mt-3">
+              <div class="form-input">
+                <input type="password" name="confirm_password" required>
+                <label class="lh-1 text-14 text-light-1">Confirm Password</label>
+              </div>
+            </div>
+
+            <!-- Case à cocher pour les promotions -->
+            <div class="d-flex align-items-center">
+              <div class="form-checkbox mt-5">
+                  <input type="checkbox" name="gcu" id="gcu" required>
+                  <div class="form-checkbox__mark">
+                      <div class="form-checkbox__icon icon-check"></div>
+                  </div>
+              </div>
+
+              <div class="text-15 lh-15 text-light-1 ml-10 mt-3 mb-3">
+                  J'accepte les <a href="#" class="text-blue-1" target="_blank">Conditions d'utilisation</a> et la <a href="#" class="text-blue-1" target="_blank">Politique de confidentialité</a>.
+              </div>
           </div>
+
+            <!-- Bouton de soumission -->
+            <div class="col-12 mt-3 d-flex justify-content-center">
+                <button type="submit" class="button py-20 -dark-1 bg-blue-1 text-white mx-auto d-block" style="width: 530px;">
+                    S'inscrire<span class="icon-arrow-top-right ml-15"></span>
+                </button>
+            </div>
+          </form>
+            <!-- Mentions légales -->
         </div>
       </div>
-    </section>
+    </div>
+  </div>
+</section>
 
 
     <footer class="footer -type-1">

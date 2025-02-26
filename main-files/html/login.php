@@ -5,9 +5,9 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-$dsn = 'mysql:dbname=onemix;host=127.0.0.1';
+$dsn = 'mysql:dbname=onemix;host=127.0.0.1:8889';
 $user = 'root';
-$password = '';
+$password = 'root';
 
 try {
     $pdo = new PDO($dsn, $user, $password);
@@ -218,47 +218,24 @@ if (count($_POST) > 0) {
                           <label class="lh-1 text-14 text-light-1">Email</label>
                       </div>
                   </div>
-                  <div class="col-12">
+                  <div class="col-12 mt-3">
                       <div class="form-input">
                           <input type="password" name="password" required>
                           <label class="lh-1 text-14 text-light-1">Password</label>
                       </div>
                   </div>
-                  <div class="col-12">
+                  <div class="col-12 mt-3">
                       <a href="#" class="text-14 fw-500 text-blue-1 underline">Forgot your password?</a>
                   </div>
-                  <div class="col-12">
+                  <div class="col-12 mt-3 d-flex justify-content-center">
                       <button type="submit" class="button py-20 -dark-1 bg-blue-1 text-white mx-auto d-block" style="width: 530px;">
-                          Sign In <div class="icon-arrow-top-right ml-15"></div>
+                          Se connecter<span class="icon-arrow-top-right ml-15"></span>
                       </button>
                   </div>
                 </form>
-
-              <div class="row y-gap-20 pt-30">
-                  <div class="col-12">
-                      <div class="text-center">or sign in with</div>
-                      <button class="button col-12 -outline-blue-1 text-blue-1 py-15 rounded-8 mt-10">
-                          <i class="icon-apple text-15 mr-10"></i>
-                          Facebook
-                      </button>
-                      <button class="button col-12 -outline-red-1 text-red-1 py-15 rounded-8 mt-15">
-                          <i class="icon-apple text-15 mr-10"></i>
-                          Google
-                      </button>
-                      <button class="button col-12 -outline-dark-2 text-dark-2 py-15 rounded-8 mt-15">
-                          <i class="icon-apple text-15 mr-10"></i>
-                          Apple
-                      </button>
-                  </div>
-              </div>
-
               <?php if (isset($_SESSION['user'])): ?>
                   <a href="logout.php" class="button px-30 fw-400 text-14 border-white -outline-white h-50 text-white ml-20">Déconnexion</a>
               <?php endif; ?>
-
-                <div class="col-12">
-                  <div class="text-center px-30">By creating an account, you agree to our Terms of Service and Privacy Statement.</div>
-                </div>
               </div>
             </div>
           </div>
@@ -266,36 +243,6 @@ if (count($_POST) > 0) {
       </div>
     </section>
 
-    <section class="layout-pt-md layout-pb-md bg-dark-2">
-      <div class="container">
-        <div class="row y-gap-30 justify-between items-center">
-          <div class="col-auto">
-            <div class="row y-gap-20  flex-wrap items-center">
-              <div class="col-auto">
-                <div class="icon-newsletter text-60 sm:text-40 text-white"></div>
-              </div>
-
-              <div class="col-auto">
-                <h4 class="text-26 text-white fw-600">Your Travel Journey Starts Here</h4>
-                <div class="text-white">Sign up and we'll send the best deals to you</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-auto">
-            <div class="single-field -w-410 d-flex x-gap-10 y-gap-20">
-              <div>
-                <input class="bg-white h-60" type="text" placeholder="Your Email">
-              </div>
-
-              <div>
-                <button class="button -md h-60 bg-blue-1 text-white">Subscribe</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <footer class="footer -type-1">
       <div class="container">
