@@ -24,6 +24,7 @@ if (isset($_SESSION['user'])) {
   <!-- Stylesheets -->
   <link rel="stylesheet" href="css/vendors.css">
   <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
 
   <title>MixOne</title>
 </head>
@@ -131,213 +132,199 @@ if (isset($_SESSION['user'])) {
 
 
   <main>
-  <section data-anim-wrap class="masthead -type-1 z-5">
-    <div data-anim-child="fade" class="masthead__bg">
-        <img src="" data-src="{{ asset('media/img/masthead/1/11.jpg') }}" alt="image" class="js-lazy">
-    </div>
+    <section data-anim-wrap class="masthead -type-1 z-5">
+        <div data-anim-child="fade" class="masthead__bg">
+            <img src="" data-src="img/masthead/1/11.jpg" alt="image" class="js-lazy">
+        </div>
 
-    <div class="container">
-        <div class="row justify-center">
-            <div class="col-auto">
-                <div class="text-center">
-                    <h1 data-anim-child="slide-up delay-4" class="text-60 lg:text-40 md:text-30 text-white">Découvrez votre prochain studio</h1>
-                    <p data-anim-child="slide-up delay-5" class="text-white mt-6 md:mt-10">Trouvez d'incroyables studios aux meilleurs prix</p>
-                </div>
+        <div class="container">
+            <div class="row justify-center">
+                <div class="col-auto">
+                    <div class="text-center">
+                        <h1 data-anim-child="slide-up delay-4" class="text-60 lg:text-40 md:text-30 text-white">Découvrez votre prochain studio</h1>
+                        <p data-anim-child="slide-up delay-5" class="text-white mt-6 md:mt-10">Trouvez d'incroyables studios aux meilleurs prix</p>
+                    </div>
 
-                <div data-anim-child="slide-up delay-6" class="tabs -underline mt-60 js-tabs">
-                    <div class="tabs__content mt-30 md:mt-20 js-tabs-content">
-                        <div class="tabs__pane -tab-item-1 is-tab-el-active">
-                            <div class="mainSearch -w-900 bg-white px-10 py-10 lg:px-20 lg:pt-5 lg:pb-20 rounded-100">
-                            <form id="searchForm">
-                              <div class="button-grid items-center">
-                                <div class="searchMenu-loc px-30 lg:py-20 lg:px-0">
-                                  <label for="city" class="text-15 fw-500 ls-2 lh-16">City</label>
-                                  <input type="text" id="city" name="city" placeholder="City" class="js-search js-dd-focus" />
-                                </div>
+                    <div data-anim-child="slide-up delay-6" class="tabs -underline mt-60 js-tabs">
+                        <div class="tabs__content mt-30 md:mt-20 js-tabs-content">
+                            <div class="tabs__pane -tab-item-1 is-tab-el-active">
+                                <div class="mainSearch -w-900 bg-white px-10 py-10 lg:px-20 lg:pt-5 lg:pb-20 rounded-100">
+                                <form id="searchForm" action="search.php" method="GET">
+                                    <div class="button-grid items-center">
+                                        <!-- Champ pour la ville -->
+                                        <div class="searchMenu-loc px-30 lg:py-20 lg:px-0">
+                                            <label for="city" class="text-15 fw-500 ls-2 lh-16">City</label>
+                                            <input type="text" id="city" name="city" placeholder="City" class="js-search js-dd-focus" />
+                                        </div>
 
-                                <div class="searchMenu-date px-30 lg:py-20 lg:px-0">
-                                  <label for="date" class="text-15 fw-500 ls-2 lh-16">Day</label>
-                                  <input type="date" id="date" name="date" class="text-15 text-light-1 ls-2 lh-16" />
-                                </div>
+                                        <!-- Champ pour les heures minimum -->
+                                        <div class="searchMenu-guests px-30 lg:py-20 lg:px-0 position-relative">
+                                            <label for="min_hours" class="text-15 fw-500 ls-2 lh-16">Hours</label>
+                                            <input type="text" id="min_hours" name="min_hours" placeholder="Hours" class="text-15 text-light-1 ls-2 lh-16" onclick="toggleHoursMenu(event)" readonly />
+                                            <div id="hoursMenu" class="hours-menu hidden">
+                                                <button type="button" class="button -outline-blue-1 text-blue-1 size-38 rounded-4" onclick="changeHours(-1)">
+                                                    <i class="icon-minus text-12"></i>
+                                                </button>
+                                                <div class="flex-center size-20 ml-15 mr-15">
+                                                    <div id="hoursValue" class="text-15">2</div>
+                                                </div>
+                                                <button type="button" class="button -outline-blue-1 text-blue-1 size-38 rounded-4" onclick="changeHours(1)">
+                                                    <i class="icon-plus text-12"></i>
+                                                </button>
+                                            </div>
+                                        </div>
 
-                                <div class="searchMenu-guests px-30 lg:py-20 lg:px-0 position-relative">
-                                  <label for="min_hours" class="text-15 fw-500 ls-2 lh-16">Hours</label>
-                                  <input type="text" id="min_hours" name="min_hours" placeholder="Hours" class="text-15 text-light-1 ls-2 lh-16" onclick="toggleHoursMenu(event)" readonly />
-                                  <div id="hoursMenu" class="hours-menu hidden">
-                                    <button type="button" class="button -outline-blue-1 text-blue-1 size-38 rounded-4" onclick="changeHours(-1)">
-                                      <i class="icon-minus text-12"></i>
-                                    </button>
-                                    <div class="flex-center size-20 ml-15 mr-15">
-                                      <div id="hoursValue" class="text-15">2</div>
+                                        <!-- Bouton de recherche -->
+                                        <div class="button-item">
+                                            <button type="submit" class="mainSearch__submit button -dark-1 h-60 px-35 col-12 rounded-100 bg-blue-1 text-white">
+                                                <i class="icon-search text-20 mr-10"></i>
+                                                Search
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button type="button" class="button -outline-blue-1 text-blue-1 size-38 rounded-4" onclick="changeHours(1)">
-                                      <i class="icon-plus text-12"></i>
-                                    </button>
-                                  </div>
-                                </div>
-
-                                <div class="button-item">
-                                  <button type="submit" class="mainSearch__submit button -dark-1 h-60 px-35 col-12 rounded-100 bg-blue-1 text-white">
-                                    <i class="icon-search text-20 mr-10"></i>
-                                    Search
-                                  </button>
-                                </div>
-                              </div>
-                            </form>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<style>
-    .hidden {
-        display: none;
-    }
-    .hours-menu {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        position: absolute;
-        background: white;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        z-index: 1000;
-        top: 100%;
-        left: 0;
-    }
-</style>
+    <style>
+        .hidden {
+            display: none;
+        }
+        .hours-menu {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            position: absolute;
+            background: white;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            z-index: 1000;
+            top: 100%;
+            left: 0;
+        }
+    </style>
 
-<script>
-    function toggleHoursMenu(event) {
-        event.stopPropagation();
-        const menu = document.getElementById('hoursMenu');
-        menu.classList.toggle('hidden');
-    }
+    <script>
+        function toggleHoursMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('hoursMenu');
+            menu.classList.toggle('hidden');
+        }
 
-    function changeHours(amount) {
-        const hoursInput = document.getElementById('min_hours');
-        const hoursValue = document.getElementById('hoursValue');
-        let currentValue = parseInt(hoursValue.textContent);
-        if (!isNaN(currentValue)) {
-            currentValue += amount;
-            if (currentValue < 1) {
-                currentValue = 1;
+        function changeHours(amount) {
+            const hoursInput = document.getElementById('min_hours');
+            const hoursValue = document.getElementById('hoursValue');
+            let currentValue = parseInt(hoursValue.textContent);
+            if (!isNaN(currentValue)) {
+                currentValue += amount;
+                if (currentValue < 1) {
+                    currentValue = 1;
+                }
+                hoursValue.textContent = currentValue;
+                hoursInput.value = currentValue;
             }
-            hoursValue.textContent = currentValue;
-            hoursInput.value = currentValue;
         }
-    }
 
-    document.addEventListener('click', function(event) {
-        const hoursInput = document.getElementById('min_hours');
-        const hoursMenu = document.getElementById('hoursMenu');
+        document.addEventListener('click', function(event) {
+            const hoursInput = document.getElementById('min_hours');
+            const hoursMenu = document.getElementById('hoursMenu');
 
-        if (!hoursInput.contains(event.target) && !hoursMenu.contains(event.target)) {
-            hoursMenu.classList.add('hidden');
-        }
-    });
+            if (!hoursInput.contains(event.target) && !hoursMenu.contains(event.target)) {
+                hoursMenu.classList.add('hidden');
+            }
+        });
 
-    document.getElementById('hoursMenu').addEventListener('click', function(event) {
-        event.stopPropagation();
-    });
-</script>
+        document.getElementById('hoursMenu').addEventListener('click', function(event) {
+            event.stopPropagation();
+        });
+    </script>
 
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+
+$dsn = 'mysql:dbname=onemix;host=127.0.0.1:8889';
+$user = 'root';
+$password = 'root';
+
+try {
+    $pdo = new PDO($dsn, $user, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erreur de connexion à la base de données : " . $e->getMessage());
+}
+
+$city = isset($_GET['city']) ? trim($_GET['city']) : '';
+$min_hours = isset($_GET['min_hours']) ? intval($_GET['min_hours']) : 0;
+
+$sql = "SELECT * FROM studios WHERE city LIKE :city AND min_hours >= :min_hours";
+$stmt = $pdo->prepare($sql);
+$stmt->execute(['city' => "%$city%", 'min_hours' => $min_hours]);
+$studios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+?>
+
+<!-- Afficher les résultats de la recherche -->
 <section class="layout-pt-md layout-pb-md">
     <div data-anim="slide-up delay-1" class="container">
         <div class="row y-gap-10 justify-between items-end">
             <div class="col-auto">
                 <div class="sectionTitle -md">
-                    <h2 class="sectionTitle__title">Recommended</h2>
-                    <p class=" sectionTitle__text mt-5 sm:mt-0">Interdum et malesuada fames ac ante ipsum</p>
-                </div>
-            </div>
-
-            <div class="col-sm-auto">
-                <div class="dropdown js-dropdown js-hotel-active">
-                    <div class="dropdown__button d-flex items-center rounded-4 border-light justify-between text-16 fw-500 px-20 h-50 w-140 sm:w-full text-14" data-el-toggle=".js-hotel-toggle" data-el-toggle-active=".js-hotel-active">
-                        <span class="js-dropdown-title">Hotel</span>
-                        <i class="icon icon-chevron-sm-down text-7 ml-10"></i>
-                    </div>
-
-                    <div class="toggle-element -dropdown js-click-dropdown js-hotel-toggle">
-                        <div class="text-14 y-gap-15 js-dropdown-list">
-                            <div><a href="#" class="d-block js-dropdown-link">Animation</a></div>
-                            <div><a href="#" class="d-block js-dropdown-link">Design</a></div>
-                            <div><a href="#" class="d-block js-dropdown-link">Illustration</a></div>
-                            <div><a href="#" class="d-block js-dropdown-link">Lifestyle</a></div>
-                            <div><a href="#" class="d-block js-dropdown-link">Business</a></div>
-                        </div>
-                    </div>
+                    <h2 class="sectionTitle__title">Résultats de la recherche</h2>
+                    <p class="sectionTitle__text mt-5 sm:mt-0">Studios correspondant à vos critères</p>
                 </div>
             </div>
         </div>
 
-        <div class="relative overflow-hidden pt-40 sm:pt-20 js-section-slider" data-gap="30" data-scrollbar data-slider-cols="xl-4 lg-3 md-2 sm-2 base-1" data-nav-prev="js-hotels-prev" data-pagination="js-hotels-pag" data-nav-next="js-hotels-next">
-            <div class="swiper-wrapper">
-                <!-- Hotel Card 1 -->
-                <div id="studioList" class="swiper-wrapper">
-                <!-- Les résultats de la recherche seront ajoutés ici -->
-                </div>
-                <div class="swiper-slide">
-                    <a href="hotel-single-1.html" class="hotelsCard -type-1">
-                        <div class="hotelsCard__image">
-                            <div class="cardImage ratio ratio-1:1">
-                                <div class="cardImage__content">
-                                    <img class="rounded-4 col-12" src="img/hotels/1.png" alt="image">
-                                </div>
-                                <div class="cardImage__wishlist">
-                                    <button class="button -blue-1 bg-white size-30 rounded-full shadow-2">
-                                        <i class="icon-heart text-12"></i>
-                                    </button>
-                                </div>
-                                <div class="cardImage__leftBadge">
-                                    <div class="py-5 px-15 rounded-right-4 text-12 lh-16 fw-500 uppercase bg-dark-1 text-white">
-                                        Breakfast included
+        <div class="relative overflow-hidden pt-40 sm:pt-20">
+            <div class="row y-gap-30">
+                <?php if (empty($studios)) : ?>
+                    <div class="col-12">
+                        <p class="text-center">Aucun studio trouvé.</p>
+                    </div>
+                <?php else : ?>
+                    <?php foreach ($studios as $studio) : ?>
+                        <div class="col-xl-3 col-lg-4 col-sm-6">
+                            <a href="#" class="hotelsCard -type-1">
+                                <div class="hotelsCard__image">
+                                    <div class="cardImage ratio ratio-1:1">
+                                        <div class="cardImage__content">
+                                            <img class="col-12" src="img/backgrounds/11.jpg" alt="<?= htmlspecialchars($studio['name']) ?>">
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="hotelsCard__content mt-10">
-                            <h4 class="hotelsCard__title text-dark-1 text-18 lh-16 fw-500">
-                                <span>The Montcalm At Brewery London City</span>
-                            </h4>
-                            <p class="text-light-1 lh-14 text-14 mt-5">Westminster Borough, London</p>
-                            <div class="d-flex items-center mt-20">
-                                <div class="flex-center bg-blue-1 rounded-4 size-30 text-12 fw-600 text-white">4.8</div>
-                                <div class="text-14 text-dark-1 fw-500 ml-10">Exceptional</div>
-                                <div class="text-14 text-light-1 ml-10">3,014 reviews</div>
-                            </div>
-                            <div class="mt-5">
-                                <div class="fw-500">
-                                    Starting from <span class="text-blue-1">US$72</span>
+
+                                <div class="hotelsCard__content mt-10">
+                                    <h4 class="hotelsCard__title text-dark-1 text-18 lh-16 fw-500">
+                                        <?= htmlspecialchars($studio['name']) ?>
+                                    </h4>
+                                    <p class="text-light-1 lh-14 text-14 mt-5"><?= htmlspecialchars($studio['city']) ?></p>
+                                    <div class="d-flex items-center mt-20">
+                                        <div class="flex-center bg-blue-1 rounded-4 size-30 text-12 fw-600 text-white">4.8</div>
+                                        <div class="text-14 text-dark-1 fw-500 ml-10">Exceptional</div>
+                                        <div class="text-14 text-light-1 ml-10">3,014 reviews</div>
+                                    </div>
+                                    <div class="mt-5">
+                                        <div class="fw-500">
+                                            A Partir de <span class="text-blue-1"><?= htmlspecialchars($studio['hourly_rate']) ?>€</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            </a>
                         </div>
-                    </a>
-                </div>
-                <!-- Add more swiper-slide items for additional hotels -->
-            </div>
-        </div>
-
-        <div class="d-flex x-gap-15 items-center justify-center sm:justify-start pt-40 sm:pt-20">
-            <div class="col-auto">
-                <button class="d-flex items-center text-24 arrow-left-hover js-hotels-prev">
-                    <i class="icon icon-arrow-left"></i>
-                </button>
-            </div>
-
-            <div class="col-auto">
-                <div class="pagination -dots text-border js-hotels-pag"></div>
-            </div>
-
-            <div class="col-auto">
-                <button class="d-flex items-center text-24 arrow-right-hover js-hotels-next">
-                    <i class="icon icon-arrow-right"></i>
-                </button>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>
