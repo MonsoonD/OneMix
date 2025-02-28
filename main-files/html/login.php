@@ -1,17 +1,13 @@
 <?php
-session_start(); // Démarrer la session
+session_start();
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-$dsn = 'mysql:dbname=onemix;host=127.0.0.1:8889';
+$dsn = 'mysql:dbname=onemix;host=127.0.0.1';
 $user = 'root';
-$password = 'root';
+$password = '';
 
 try {
     $pdo = new PDO($dsn, $user, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // Activer les exceptions PDO
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); 
 } catch (PDOException $e) {
     die("Erreur de connexion à la base de données : " . $e->getMessage());
 }
@@ -26,11 +22,11 @@ if (count($_POST) > 0) {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user) {
-        echo "Utilisateur trouvé : " . print_r($user, true); // Affiche les données de l'utilisateur
+        echo "Utilisateur trouvé : " . print_r($user, true); 
         if (password_verify($password, $user['password'])) {
             echo "Mot de passe correct !";
-            $_SESSION['user'] = $user; // Stocker les informations de l'utilisateur dans la session
-            header('Location: index.php'); // Rediriger vers index.php
+            $_SESSION['user'] = $user; 
+            header('Location: index.php'); 
             exit();
         } else {
             echo "Mot de passe incorrect.";
@@ -233,9 +229,6 @@ if (count($_POST) > 0) {
                       </button>
                   </div>
                 </form>
-              <?php if (isset($_SESSION['user'])): ?>
-                  <a href="logout.php" class="button px-30 fw-400 text-14 border-white -outline-white h-50 text-white ml-20">Déconnexion</a>
-              <?php endif; ?>
               </div>
             </div>
           </div>
