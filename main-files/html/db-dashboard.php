@@ -1,17 +1,84 @@
+<?php
+include("config/database.php");
+function getUserConversations($userId) {
+    global $conn;
+    
+    $sql = "SELECT DISTINCT 
+                IF(sender_id = ?, receiver_id, sender_id) as user_id,
+                (SELECT CONCAT(first_name, ' ', last_name) FROM users WHERE id = IF(sender_id = ?, receiver_id, sender_id)) as user_name,
+                (SELECT MAX(created_at) FROM messages 
+                 WHERE (sender_id = ? AND receiver_id = IF(sender_id = ?, receiver_id, sender_id))
+                    OR (receiver_id = ? AND sender_id = IF(sender_id = ?, receiver_id, sender_id))) as last_message_time
+            FROM messages 
+            WHERE sender_id = ? OR receiver_id = ?
+            ORDER BY last_message_time DESC";
+            
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("iiiiiiii", $userId, $userId, $userId, $userId, $userId, $userId, $userId, $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $conversations = [];
+    while ($row = $result->fetch_assoc()) {
+        $conversations[] = $row;
+    }
+    
+    return $conversations;
+}
+
+function getMessages($senderId, $receiverId) {
+    global $conn;
+    
+    $sql = "SELECT m.*, u.first_name, u.last_name
+            FROM messages m
+            JOIN users u ON m.sender_id = u.id
+            WHERE (m.sender_id = ? AND m.receiver_id = ?)
+               OR (m.sender_id = ? AND m.receiver_id = ?)
+            ORDER BY m.created_at ASC";
+            
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("iiii", $senderId, $receiverId, $receiverId, $senderId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $messages = [];
+    while ($row = $result->fetch_assoc()) {
+        $messages[] = $row;
+    }
+    
+    return $messages;
+}
+
+function getAllUsers($currentUserId) {
+    global $conn;
+    
+    $sql = "SELECT id, CONCAT(first_name, ' ', last_name) as name FROM users WHERE id != ? ORDER BY first_name";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $currentUserId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $users = [];
+    while ($row = $result->fetch_assoc()) {
+        $users[] = $row;
+    }
+    
+    return $users;
+}
+
+$currentUserId = $_SESSION['user_id'] ?? 1;
+?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <!-- Required meta tags -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Google fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
 
-  <!-- Stylesheets -->
   <link rel="stylesheet" href="css/vendors.css">
   <link rel="stylesheet" href="css/main.css">
 
@@ -80,46 +147,15 @@
                 <div class="menu js-navList">
                   <ul class="menu__nav text-dark-1 fw-500 -is-active">
 
-                    <li class="menu-item-has-children">
-                      <a data-barba href="">
+                    <li >
+                      <a href="index.php">
                         <span class="mr-10">Home</span>
-                        <i class="icon icon-chevron-sm-down"></i>
                       </a>
-
-
-                      <ul class="subnav">
-                        <li class="subnav__backBtn js-nav-list-back">
-                          <a href="index.php"><i class="icon icon-chevron-sm-down"></i> Home</a>
-                        </li>
-
-                        <li><a href="index.php">Home</a></li>
-                      </ul>
-
-                    
-
-
-                      
-
-                    
-
-
-                    <li class="menu-item-has-children">
-                      <a data-barba href="">
+                    <li>
+                      <a data-barba href="db-dashboard.php">
                         <span class="mr-10">Dashboard</span>
-                        <i class="icon icon-chevron-sm-down"></i>
+                        
                       </a>
-
-
-                      <ul class="subnav">
-                        <li class="subnav__backBtn js-nav-list-back">
-                          <a href="db-dashboard.php"><i class="icon icon-chevron-sm-down"></i> Dashboard</a>
-                        </li>
-
-                        <li><a href="db-dashboard.php">Dashboard</a></li>
-
-                      </ul>
-
-                    
                   </ul>
                 </div>
 
@@ -130,11 +166,330 @@
 
 
             <div class="row items-center x-gap-5 y-gap-20 pl-20 lg:d-none">
-              <div class="col-auto">
-                <button class="button -blue-1-05 size-50 rounded-22 flex-center">
-                  <i class="icon-email-2 text-20"></i>
-                </button>
+            <div class="messaging-modal" id="messagingModal" style="display: none;">
+                <div class="messaging-container">
+                    <div class="messaging-header">
+                        <h3>Messages</h3>
+                        <button id="closeMessagingModal" class="close-modal">×</button>
+                    </div>
+                    
+                    <div class="messaging-sidebar">
+                        <div class="new-message-btn">
+                            <button id="newMessageBtn" class="button -dark-1 py-15 px-35 h-60 col-12 rounded-4 bg-blue-1 text-white">
+                                <i class="icon-plus text-14 mr-10"></i>
+                                New Message
+                            </button>
+                        </div>
+                        
+                        <div class="conversation-list" id="conversationList">
+                            
+                        </div>
+                    </div>
+                    
+                    <div class="message-container">
+                        <div id="emptyStateMessage" class="empty-state">
+                            <i class="icon-email-2 text-60"></i>
+                            <p>Select a conversation or start a new one</p>
+                        </div>
+                        
+                        <div id="activeConversation" class="active-conversation" style="display: none;">
+                            <div class="conversation-header">
+                                <h4 id="conversationRecipient">Recipient Name</h4>
+                            </div>
+                            
+                            <div id="messagesList" class="messages-list">
+                                
+                            </div>
+                            
+                            <div class="message-input">
+                                <input type="hidden" id="currentRecipientId" value="">
+                                <textarea id="messageText" placeholder="Type your message..."></textarea>
+                                <button id="sendMessageBtn" class="button -blue-1 py-10 px-20 h-40 rounded-4 bg-blue-1 text-white">
+                                    <i class="icon-send text-16"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+              <div class="new-message-modal" id="newMessageModal" style="display: none;">
+                  <div class="new-message-container">
+                      <div class="new-message-header">
+                          <h3>New Message</h3>
+                          <button id="closeNewMessageModal" class="close-modal">×</button>
+                      </div>
+                      
+                      <div class="new-message-content">
+                          <div class="form-group">
+                              <label for="recipientSelect">Select Recipient:</label>
+                              <select id="recipientSelect" class="form-select">
+                                  <option value="">Select a user...</option>
+                                  <?php foreach(getAllUsers($currentUserId) as $user): ?>
+                                      <option value="<?php echo $user['id']; ?>"><?php echo htmlspecialchars($user['name']); ?></option>
+                                  <?php endforeach; ?>
+                              </select>
+                          </div>
+                          
+                          <div class="new-message-actions">
+                              <button id="startConversationBtn" class="button -blue-1 py-15 px-35 h-60 rounded-4 bg-blue-1 text-white">
+                                  Start Conversation
+                              </button>
+                          </div>
+                      </div>
+                  </div>
               </div>
+              <style>
+                .messaging-modal {
+                  position: fixed;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 100%;
+                  background-color: rgba(0, 0, 0, 0.5);
+                  z-index: 1000;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                }
+
+                .messaging-container {
+                  width: 900px;
+                  height: 600px;
+                  background-color: white;
+                  border-radius: 8px;
+                  overflow: hidden;
+                  display: flex;
+                }
+
+                .messaging-header {
+                  padding: 15px 20px;
+                  background-color: #3554D1;
+                  color: white;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                }
+
+                .messaging-header h3 {
+                  margin: 0;
+                  color: white;
+                }
+
+                .close-modal {
+                  background: none;
+                  border: none;
+                  color: white;
+                  font-size: 24px;
+                  cursor: pointer;
+                }
+
+                .messaging-body {
+                  display: flex;
+                  flex: 1;
+                  overflow: hidden;
+                }
+
+                .messaging-sidebar {
+                  width: 280px;
+                  background-color: #f5f5f5;
+                  border-right: 1px solid #e0e0e0;
+                  display: flex;
+                  flex-direction: column;
+                  height: 100%;
+                }
+
+                .new-message-btn {
+                  margin-bottom: 15px;
+                  border-bottom: 1px solid #e0e0e0;
+                }
+
+                .conversation-item {
+                  padding: 15px;
+                  border-bottom: 1px solid #e0e0e0;
+                  cursor: pointer;
+                  transition: background-color 0.2s;
+                }
+
+                .conversation-item:hover {
+                  background-color: #eaeaea;
+                }
+
+                .conversation-item.active {
+                  background-color: #e6f2ff;
+                }
+
+                .conversation-name {
+                  font-weight: 500;
+                  margin-bottom: 5px;
+                }
+
+                .conversation-time {
+                  font-size: 12px;
+                  color: #777;
+                }
+
+                .message-container {
+                  flex: 1;
+                  display: flex;
+                  flex-direction: column;
+                  height: 100%;
+                }
+                
+                .empty-state {
+                  display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100%;
+                }
+
+                .active-conversation {
+                  display: flex;
+                  flex-direction: column;
+                  height: 100%;
+                }
+
+                .conversation-header {
+                  padding: 15px 20px;
+                  background-color: #f9f9f9;
+                  border-bottom: 1px solid #e0e0e0;
+                }
+
+                .conversation-header h4 {
+                  margin: 0;
+                }
+
+                .conversation-list {
+                  flex: 1;
+                  overflow-y: auto;
+                  max-height: calc(100% - 70px);
+                }
+
+                .messages-list {
+                  flex: 1;
+                  padding: 20px;
+                  overflow-y: auto;
+                  display: flex;
+                  flex-direction: column;
+                  max-height: calc(100% - 130px);
+                }
+
+                .message {
+                  max-width: 70%;
+                  padding: 10px 15px;
+                  border-radius: 18px;
+                  margin-bottom: 10px;
+                  position: relative;
+                }
+
+                .message-sent {
+                  align-self: flex-end;
+                  background-color: #3554D1;
+                  color: white;
+                  border-bottom-right-radius: 5px;
+                }
+
+                .message-received {
+                  align-self: flex-start;
+                  background-color: #f0f0f0;
+                  color: #333;
+                  border-bottom-left-radius: 5px;
+                }
+
+                .message-sender {
+                  font-size: 12px;
+                  margin-bottom: 3px;
+                  font-weight: 500;
+                }
+
+                .message-time {
+                  font-size: 10px;
+                  position: absolute;
+                  bottom: -16px;
+                  color: #777;
+                }
+
+                .message-sent .message-time {
+                  right: 5px;
+                }
+
+                .message-received .message-time {
+                  left: 5px;
+                }
+
+                .message-input {
+                  padding: 15px;
+                  border-top: 1px solid #e0e0e0;
+                  display: flex;
+                  align-items: center;
+                  background-color: white;
+                }
+
+                .message-input textarea {
+                  flex: 1;
+                  border: 1px solid #ddd;
+                  border-radius: 20px;
+                  padding: 10px 15px;
+                  resize: none;
+                  height: 40px;
+                  margin-right: 10px;
+                }
+
+                .new-message-modal {
+                  position: fixed;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 100%;
+                  background-color: rgba(0, 0, 0, 0.5);
+                  z-index: 1100;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                }
+
+                .new-message-container {
+                  width: 400px;
+                  background-color: white;
+                  border-radius: 8px;
+                  overflow: hidden;
+                }
+
+                .new-message-header {
+                  padding: 15px 20px;
+                  background-color: #3554D1;
+                  color: white;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                }
+
+                .new-message-content {
+                  padding: 20px;
+                }
+
+                .form-group {
+                  margin-bottom: 20px;
+                }
+
+                .form-group label {
+                  display: block;
+                  margin-bottom: 5px;
+                  font-weight: 500;
+                }
+
+                .form-select {
+                  width: 100%;
+                  padding: 10px;
+                  border: 1px solid #ddd;
+                  border-radius: 4px;
+                }
+
+                .new-message-actions {
+                  text-align: right;
+                }
+              </style>
 
               <div class="col-auto">
                 <button class="button -blue-1-05 size-50 rounded-22 flex-center">
@@ -186,6 +541,15 @@
             <a href="db-wishlist.php" class="d-flex items-center text-15 lh-1 fw-500">
               <img src="img/dashboard/sidebar/bookmark.svg" alt="image" class="mr-15">
               Wishlist
+            </a>
+          </div>
+        </div>
+
+        <div class="sidebar__item">
+          <div class="sidebar__button ">
+            <a href="create-studio.php" class="d-flex items-center text-15 lh-1 fw-500">
+              <img src="img/dashboard/sidebar/hotel.svg" alt="image" class="mr-15">
+              Gestion Studio
             </a>
           </div>
         </div>
@@ -461,6 +825,194 @@
   </div>
 
   <!-- JavaScript -->
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageButton = document.querySelector('.button.-blue-1-05.size-50');
+        const messagingModal = document.getElementById('messagingModal');
+        const closeMessagingModal = document.getElementById('closeMessagingModal');
+        const newMessageBtn = document.getElementById('newMessageBtn');
+        const newMessageModal = document.getElementById('newMessageModal');
+        const closeNewMessageModal = document.getElementById('closeNewMessageModal');
+        const startConversationBtn = document.getElementById('startConversationBtn');
+        const recipientSelect = document.getElementById('recipientSelect');
+        const emptyStateMessage = document.getElementById('emptyStateMessage');
+        const activeConversation = document.getElementById('activeConversation');
+        const conversationList = document.getElementById('conversationList');
+        const messagesList = document.getElementById('messagesList');
+        const messageText = document.getElementById('messageText');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const currentRecipientId = document.getElementById('currentRecipientId');
+        const conversationRecipient = document.getElementById('conversationRecipient');
+        
+        const currentUserId = <?php echo $currentUserId; ?>;
+        
+        messageButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            messagingModal.style.display = 'flex';
+            loadConversations();
+        });
+        
+        closeMessagingModal.addEventListener('click', function() {
+            messagingModal.style.display = 'none';
+        });
+        
+        newMessageBtn.addEventListener('click', function() {
+            newMessageModal.style.display = 'flex';
+        });
+        
+        closeNewMessageModal.addEventListener('click', function() {
+            newMessageModal.style.display = 'none';
+        });
+        
+        startConversationBtn.addEventListener('click', function() {
+            const recipientId = recipientSelect.value;
+            if (!recipientId) {
+                alert('Please select a recipient');
+                return;
+            }
+            
+            const recipientName = recipientSelect.options[recipientSelect.selectedIndex].text;
+            openConversation(recipientId, recipientName);
+            newMessageModal.style.display = 'none';
+        });
+        
+        sendMessageBtn.addEventListener('click', sendMessage);
+        
+        messageText.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        function loadConversations() {
+            fetch('api/get-conversations.php')
+                .then(response => response.json())
+                .then(data => {
+                    conversationList.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        const emptyItem = document.createElement('div');
+                        emptyItem.className = 'conversation-item';
+                        emptyItem.innerHTML = '<p>No conversations yet</p>';
+                        conversationList.appendChild(emptyItem);
+                        return;
+                    }
+                    
+                    data.forEach(conversation => {
+                        const conversationItem = document.createElement('div');
+                        conversationItem.className = 'conversation-item';
+                        conversationItem.dataset.userId = conversation.user_id;
+                        conversationItem.dataset.userName = conversation.user_name;
+                        
+                        const date = new Date(conversation.last_message_time);
+                        const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        
+                        conversationItem.innerHTML = `
+                            <div class="conversation-name">${conversation.user_name}</div>
+                            <div class="conversation-time">${formattedDate}</div>
+                        `;
+                        
+                        conversationItem.addEventListener('click', function() {
+                            const userId = this.dataset.userId;
+                            const userName = this.dataset.userName;
+                            openConversation(userId, userName);
+                        });
+                        
+                        conversationList.appendChild(conversationItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading conversations:', error);
+                });
+        }
+        
+        function openConversation(userId, userName) {
+            emptyStateMessage.style.display = 'none';
+            activeConversation.style.display = 'flex';
+            conversationRecipient.textContent = userName;
+            currentRecipientId.value = userId;
+            
+            const conversationItems = document.querySelectorAll('.conversation-item');
+            conversationItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.userId === userId) {
+                    item.classList.add('active');
+                }
+            });
+            
+            loadMessages(userId);
+        }
+        
+        function loadMessages(recipientId) {
+            fetch(`api/get-messages.php?recipient_id=${recipientId}`)
+                .then(response => response.json())
+                .then(data => {
+                    messagesList.innerHTML = '';
+                    
+                    data.forEach(message => {
+                        const messageItem = document.createElement('div');
+                        messageItem.className = message.sender_id == currentUserId ? 'message message-sent' : 'message message-received';
+                        
+                        const date = new Date(message.created_at);
+                        const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        
+                        let senderName = '';
+                        if (message.sender_id != currentUserId) {
+                            senderName = `<div class="message-sender">${message.first_name} ${message.last_name}</div>`;
+                        }
+                        
+                        messageItem.innerHTML = `
+                            ${senderName}
+                            <div class="message-content">${message.message}</div>
+                            <div class="message-time">${formattedDate}</div>
+                        `;
+                        
+                        messagesList.appendChild(messageItem);
+                    });
+                    
+                    messagesList.scrollTop = messagesList.scrollHeight;
+                })
+                .catch(error => {
+                    console.error('Error loading messages:', error);
+                });
+        }
+        
+        function sendMessage() {
+            const message = messageText.value.trim();
+            const recipientId = currentRecipientId.value;
+            
+            if (!message || !recipientId) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('recipient_id', recipientId);
+            formData.append('message', message);
+            
+            fetch('api/send-message.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    messageText.value = '';
+                    
+                    loadMessages(recipientId);
+                    
+                    loadConversations();
+                } else {
+                    alert('Error sending message: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
+            });
+        }
+    });
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js" integrity="sha512-QSkVNOCYLtj73J4hbmVoOV6KVZuMluZlioC+trLpewV8qMjsWqlIQvkn1KGX2StWvPMdWGBqim1xlC8krl1EKQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAAz77U5XQuEME6TpftaMdX0bBelQxXRlM"></script>
   <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>

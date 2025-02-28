@@ -1,13 +1,94 @@
 <?php
-session_start(); // Démarrer la session
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
 
-if (isset($_SESSION['user'])) {
-    // L'utilisateur est connecté
-    $user = $_SESSION['user'];
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
+$dsn = 'mysql:dbname=onemix;host=127.0.0.1:8889';
+$user = 'root';
+$password = 'root';
+
+try {
+    $pdo = new PDO($dsn, $user, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erreur de connexion à la base de données : " . $e->getMessage());
+}
+
+function calculateDistance($lat1, $lon1, $lat2, $lon2) {
+  if (!$lat1 || !$lon1 || !$lat2 || !$lon2) {
+    return 9999; 
+  }
+  
+  $earth_radius = 6371;
+
+  $lat1 = deg2rad(floatval($lat1));
+  $lon1 = deg2rad(floatval($lon1));
+  $lat2 = deg2rad(floatval($lat2));
+  $lon2 = deg2rad(floatval($lon2));
+
+  $dlat = $lat2 - $lat1;
+  $dlon = $lon2 - $lon1;
+
+  //Formule de Haversine
+  $a = sin($dlat / 2) * sin($dlat / 2) + cos($lat1) * cos($lat2) * sin($dlon / 2) * sin($dlon / 2);
+  $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+  $distance = $earth_radius * $c;
+
+  return $distance;
+}
+
+$city = isset($_GET['city']) ? trim($_GET['city']) : '';
+$min_hours = isset($_GET['min_hours']) ? intval($_GET['min_hours']) : 2;
+$max_distance = isset($_GET['distance']) ? floatval($_GET['distance']) : 5;
+$user_lat = isset($_GET['latitude']) ? floatval($_GET['latitude']) : null;
+$user_lon = isset($_GET['longitude']) ? floatval($_GET['longitude']) : null;
+
+$sql = "SELECT * FROM studios WHERE 1=1";
+$params = [];
+
+if (!empty($city)) {
+    $sql .= " AND city LIKE :city";
+    $params['city'] = "%$city%";
+}
+
+if ($min_hours > 0) {
+  $sql .= " AND min_hours <= :min_hours";
+  $params['min_hours'] = $min_hours;
+}
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$studios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$filtered_studios = [];
+$has_coordinates = ($user_lat && $user_lon);
+
+foreach ($studios as $studio) {
+    if (!$has_coordinates) {
+        $studio['distance'] = null;
+        $filtered_studios[] = $studio;
+        continue;
+    }
+    
+    $distance = calculateDistance($user_lat, $user_lon, $studio['latitude'], $studio['longitude']);
+    $studio['distance'] = round($distance, 1);
+    
+    if ($distance <= $max_distance) {
+        $filtered_studios[] = $studio;
+    }
+}
+
+if ($has_coordinates) {
+    usort($filtered_studios, function($a, $b) {
+        return $a['distance'] <=> $b['distance'];
+    });
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en" data-x="html" data-x-toggle="html-overflow-hidden">
 
@@ -72,7 +153,7 @@ if (isset($_SESSION['user'])) {
 
                   <li class="subnav__backBtn js-nav-list-back">
 
-                        <li><a href="index.html">Home</a></li>
+                        <li><a href="index.php">Home</a></li>
 
 
                         <li class="subnav__backBtn js-nav-list-back">
@@ -150,27 +231,52 @@ if (isset($_SESSION['user'])) {
                             <div class="tabs__pane -tab-item-1 is-tab-el-active">
                                 <div class="mainSearch -w-900 bg-white px-10 py-10 lg:px-20 lg:pt-5 lg:pb-20 rounded-100">
                                 <form id="searchForm" action="index.php" method="GET">
+                                    <input type="hidden" id="latitude" name="latitude" value="<?= $user_lat ?>">
+                                    <input type="hidden" id="longitude" name="longitude" value="<?= $user_lon ?>">
+                                    <input type="hidden" id="distance" name="distance" value="<?= $max_distance ?>">
                                     <div class="button-grid items-center">
-                                        <!-- Champ pour la ville -->
+
                                         <div class="searchMenu-loc px-30 lg:py-20 lg:px-0">
                                             <label for="city" class="text-15 fw-500 ls-2 lh-16">City</label>
-                                            <input type="text" id="city" name="city" placeholder="City" class="js-search js-dd-focus" />
+                                            <input type="text" id="city" name="city" placeholder="City" value="<?= htmlspecialchars($city) ?>" class="js-search js-dd-focus" />
                                         </div>
 
-                                        <!-- Champ pour les heures minimum -->
+                                       
                                         <div class="searchMenu-guests px-30 lg:py-20 lg:px-0 position-relative">
                                             <label for="min_hours" class="text-15 fw-500 ls-2 lh-16">Hours</label>
-                                            <input type="text" id="min_hours" name="min_hours" placeholder="Hours" class="text-15 text-light-1 ls-2 lh-16" onclick="toggleHoursMenu(event)" readonly />
+                                            <input type="text" id="min_hours" name="min_hours" placeholder="Hours" value="<?= $min_hours ?>" class="text-15 text-light-1 ls-2 lh-16" onclick="toggleHoursMenu(event)" readonly />
                                             <div id="hoursMenu" class="hours-menu hidden">
                                                 <button type="button" class="button -outline-blue-1 text-blue-1 size-38 rounded-4" onclick="changeHours(-1)">
                                                     <i class="icon-minus text-12"></i>
                                                 </button>
                                                 <div class="flex-center size-20 ml-15 mr-15">
-                                                    <div id="hoursValue" class="text-15">2</div>
+                                                    <div id="hoursValue" class="text-15"><?= $min_hours ?></div>
                                                 </div>
                                                 <button type="button" class="button -outline-blue-1 text-blue-1 size-38 rounded-4" onclick="changeHours(1)">
                                                     <i class="icon-plus text-12"></i>
                                                 </button>
+                                            </div>
+                                        </div>
+                                        <div class="sidebar__item ">
+                                        <label for="distanceSlider" class="text-15 fw-500 ls-2 lh-16">Périmetre</label>
+                                            <div class="row x-gap-10 y-gap-30">
+                                                <div class="col-12">
+                                                    <div class="js-price-rangeSlider">
+                                                        <div class="text-14 fw-500"></div>
+
+                                                        <div class="d-flex justify-between mb-20">
+                                                            <div class="text-15 text-dark-1">
+                                                                <span class="js-lower">0km</span>
+                                                                -
+                                                                <span class="js-upper"><?= $max_distance ?>km</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="px-5">
+                                                            <div id="distanceSlider" class="js-slider noUi-target noUi-ltr noUi-horizontal noUi-txt-dir-ltr"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -208,16 +314,397 @@ if (isset($_SESSION['user'])) {
             top: 100%;
             left: 0;
         }
+        .distance-badge {
+            display: inline-block;
+            background-color: #e9f5ff;
+            color: #3554D1;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
     </style>
 
-    <script>
-        function toggleHoursMenu(event) {
+    <section class="layout-pt-md layout-pb-md">
+        <div data-anim="slide-up delay-1" class="container">
+            <div class="row y-gap-10 justify-between items-end">
+                <div class="col-auto">
+                    <div class="sectionTitle -md">
+                        <h2 class="sectionTitle__title">Résultats de la recherche</h2>
+                        <p class="sectionTitle__text mt-5 sm:mt-0">
+                            <?php if (count($filtered_studios) > 0): ?>
+                                <?= count($filtered_studios) ?> studio(s) correspondant à vos critères
+                                <?php if ($city): ?>près de <strong><?= htmlspecialchars($city) ?></strong><?php endif; ?>
+                                <?php if ($has_coordinates): ?>dans un rayon de <strong><?= $max_distance ?>km</strong><?php endif; ?>
+                            <?php else: ?>
+                                Aucun studio trouvé correspondant à vos critères
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative overflow-hidden pt-40 sm:pt-20">
+                <div class="row y-gap-30">
+                    <?php if (empty($filtered_studios)) : ?>
+                        <div class="col-12">
+                            <p class="text-center">Aucun studio trouvé dans le périmètre sélectionné. Essayez d'augmenter la distance ou de chercher dans une autre ville.</p>
+                        </div>
+                    <?php else : ?>
+                        <?php foreach ($filtered_studios as $studio) : ?>
+                            <div class="col-xl-3 col-lg-4 col-sm-6">
+                                <a href="#" class="hotelsCard -type-1">
+                                    <div class="hotelsCard__image">
+                                        <div class="cardImage ratio ratio-1:1">
+                                            <div class="cardImage__content">
+                                            <?php
+                                            $images = !empty($studio['images']) ? json_decode($studio['images'], true) : [];
+                                            $studioImage = (!empty($images) && file_exists($images[0])) ? $images[0] : 'img/backgrounds/placeholder.jpg'; // Image par défaut
+                                            ?>
+                                            <img class="col-12" src="<?= htmlspecialchars($studioImage) ?>" alt="<?= htmlspecialchars($studio['name']) ?>">
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="hotelsCard__content mt-10">
+                                        <h4 class="hotelsCard__title text-dark-1 text-18 lh-16 fw-500">
+                                            <?= htmlspecialchars($studio['name']) ?>
+                                            <?php if (isset($studio['distance'])): ?>
+                                                <span class="distance-badge"><?= $studio['distance'] ?> km</span>
+                                            <?php endif; ?>
+                                        </h4>
+                                        <p class="text-light-1 lh-14 text-14 mt-5"><?= htmlspecialchars($studio['city']) ?></p>
+                                        <div class="d-flex items-center mt-20">
+                                            <div class="flex-center bg-blue-1 rounded-4 size-30 text-12 fw-600 text-white">4.8</div>
+                                            <div class="text-14 text-dark-1 fw-500 ml-10">Exceptional</div>
+                                            <div class="text-14 text-light-1 ml-10">3,014 reviews</div>
+                                        </div>
+                                        <div class="mt-5">
+                                            <div class="fw-500">
+                                                A Partir de <span class="text-blue-1"><?= htmlspecialchars($studio['hourly_rate']) ?>€</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="layout-pt-md layout-pb-lg">
+        <div data-anim-wrap="" class="container animated">
+            <div class="row y-gap-20 justify-between">
+
+                <div class="row y-gap-40 justify-between pt-50">
+
+                    <div data-anim-child="slide-up delay-2" class="col-lg-3 col-sm-6 is-in-view">
+
+                        <div class="featureIcon -type-1 ">
+                            <div class="d-flex justify-center">
+                                <img src="http://127.0.0.1:8000/media/img/featureIcons/1/1.svg" alt="image" class="js-lazy loaded" data-ll-status="loaded">
+                            </div>
+
+                            <div class="text-center mt-30">
+                                <h4 class="text-18 fw-500">Garantie du meilleur prix</h4>
+                                <p class="text-15 mt-10">Nous vous assurons des tarifs compétitifs et transparents sur tous les studios d’enregistrement disponibles sur notre plateforme. Pas de frais cachés, pas de mauvaise surprise !</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div data-anim-child="slide-up delay-3" class="col-lg-3 col-sm-6 is-in-view">
+
+                        <div class="featureIcon -type-1 ">
+                            <div class="d-flex justify-center">
+                                <img src="http://127.0.0.1:8000/media/img/featureIcons/1/2.svg" alt="image" class="js-lazy loaded" data-ll-status="loaded">
+                            </div>
+
+                            <div class="text-center mt-30">
+                                <h4 class="text-18 fw-500">Réservation facile et rapide</h4>
+                                <p class="text-15 mt-10">Trouvez un studio, choisissez votre créneau horaire et réservez en quelques clics. Plus besoin d’appels ou d’échanges compliqués, tout se fait directement en ligne.</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div data-anim-child="slide-up delay-4" class="col-lg-3 col-sm-6 is-in-view">
+
+                        <div class="featureIcon -type-1 ">
+                            <div class="d-flex justify-center">
+                                <img src="http://127.0.0.1:8000/media/img/featureIcons/1/3.svg" alt="image" class="js-lazy loaded" data-ll-status="loaded">
+                            </div>
+
+                            <div class="text-center mt-30">
+                                <h4 class="text-18 fw-500">Service client 24h/24 et 7j/7</h4>
+                                <p class="text-15 mt-10">Notre équipe est disponible à tout moment pour répondre à vos questions et vous accompagner avant, pendant et après votre réservation.</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="layout-pt-lg layout-pb-lg bg-blue-2">
+        <div data-anim-wrap="" class="container animated">
+            <div class="row y-gap-40 justify-between">
+                <div data-anim-child="slide-up delay-1" class="col-xl-5 col-lg-6 is-in-view">
+                    <h2 class="text-30">What our customers are<br> saying us?</h2>
+                    <p class="mt-20">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas varius tortor nibh, sit amet tempor nibh finibus et. Aenean eu enim justo.</p>
+
+                    <div class="row y-gap-30 pt-60 lg:pt-40">
+                        <div class="col-sm-5 col-6">
+                            <div class="text-30 lh-15 fw-600">13m+</div>
+                            <div class="text-light-1 lh-15">Happy People</div>
+                        </div>
+
+                        <div class="col-sm-5 col-6">
+                            <div class="text-30 lh-15 fw-600">4.88</div>
+                            <div class="text-light-1 lh-15">Overall rating</div>
+
+                            <div class="d-flex x-gap-5 items-center pt-10">
+
+                                <div class="icon-star text-blue-1 text-10"></div>
+
+                                <div class="icon-star text-blue-1 text-10"></div>
+
+                                <div class="icon-star text-blue-1 text-10"></div>
+
+                                <div class="icon-star text-blue-1 text-10"></div>
+
+                                <div class="icon-star text-blue-1 text-10"></div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div data-anim-child="slide-up delay-2" class="col-lg-6 is-in-view">
+                    <div class="overflow-hidden js-testimonials-slider-3 swiper-initialized swiper-horizontal swiper-pointer-events swiper-backface-hidden" data-scrollbar="">
+                        <div class="swiper-wrapper" id="swiper-wrapper-e3bcca3e4766ba0c" aria-live="polite" style="cursor: grab;">
+
+                            <div class="swiper-slide swiper-slide-active" role="group" aria-label="1 / 3" style="width: 450px;">
+                                <div class="row items-center x-gap-30 y-gap-20">
+                                    <div class="col-auto">
+                                        <img src="http://127.0.0.1:8000/media/img/avatars/1.png" alt="image" class="js-lazy loaded" data-ll-status="loaded">
+                                    </div>
+
+                                    <div class="col-auto">
+                                        <h5 class="text-16 fw-500">Annette Black</h5>
+                                        <div class="text-15 text-light-1 lh-15">UX / UI Designer</div>
+                                    </div>
+                                </div>
+
+                                <p class="text-18 fw-500 text-dark-1 mt-30 sm:mt-20">The place is in a great location in Gumbet. The area is safe and beautiful. The apartment was comfortable and the host was kind and responsive to our requests.</p>
+                            </div>
+
+                            <div class="swiper-slide swiper-slide-next" role="group" aria-label="2 / 3" style="width: 450px;">
+                                <div class="row items-center x-gap-30 y-gap-20">
+                                    <div class="col-auto">
+                                        <img src="http://127.0.0.1:8000/media/img/avatars/1.png" alt="image" class="js-lazy loaded" data-ll-status="loaded">
+                                    </div>
+
+                                    <div class="col-auto">
+                                        <h5 class="text-16 fw-500">Annette Black</h5>
+                                        <div class="text-15 text-light-1 lh-15">UX / UI Designer</div>
+                                    </div>
+                                </div>
+
+                                <p class="text-18 fw-500 text-dark-1 mt-30 sm:mt-20">The place is in a great location in Gumbet. The area is safe and beautiful. The apartment was comfortable and the host was kind and responsive to our requests.</p>
+                            </div>
+
+                            <div class="swiper-slide" role="group" aria-label="3 / 3" style="width: 450px;">
+                                <div class="row items-center x-gap-30 y-gap-20">
+                                    <div class="col-auto">
+                                        <img src="#" data-src="http://127.0.0.1:8000/media/img/avatars/1.png" alt="image" class="js-lazy">
+                                    </div>
+
+                                    <div class="col-auto">
+                                        <h5 class="text-16 fw-500">Annette Black</h5>
+                                        <div class="text-15 text-light-1 lh-15">UX / UI Designer</div>
+                                    </div>
+                                </div>
+
+                                <p class="text-18 fw-500 text-dark-1 mt-30 sm:mt-20">The place is in a great location in Gumbet. The area is safe and beautiful. The apartment was comfortable and the host was kind and responsive to our requests.</p>
+                            </div>
+
+                        </div>
+
+                        <div class="d-flex items-center mt-60 sm:mt-20 js-testimonials-slider-pag">
+                            <div class="text-dark-1 fw-500 js-current">01</div>
+                            <div class="slider-scrollbar bg-border ml-20 mr-20 w-max-300 js-scrollbar"><div class="swiper-scrollbar-drag" style="transform: translate3d(0px, 0px, 0px); width: 100px;"></div></div>
+                            <div class="text-dark-1 fw-500 js-all">03</div>
+                        </div>
+                    <span class="swiper-notification" aria-live="assertive" aria-atomic="true"></span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="layout-pt-md layout-pb-md bg-dark-2">
+        <div class="container">
+            <div class="row y-gap-30 justify-between items-center">
+                <div class="col-auto">
+                    <div class="row y-gap-20  flex-wrap items-center">
+                        <div class="col-auto">
+                            <div class="icon-newsletter text-60 sm:text-40 text-white"></div>
+                        </div>
+
+                        <div class="col-auto">
+                            <h4 class="text-26 text-white fw-600">Ta session studio commence maintenant</h4>
+                            <div class="text-white">Inscris toi pour recevoir les meilleurs offres</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-auto">
+                    <div class="single-field -w-410 d-flex x-gap-10 y-gap-20">
+                        <div>
+                            <input class="bg-white h-60" type="text" placeholder="Your Email">
+                        </div>
+
+                        <div>
+                            <button class="button -md h-60 bg-blue-1 text-white">S'abonner</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+  </main>
+
+    <footer class="footer -type-1">
+      <div class="container">
+          <div class="pt-60 pb-60">
+              <div class="row y-gap-40 justify-between xl:justify-start">
+                  <div class="col-xl-2 col-lg-4 col-sm-6">
+                      <h5 class="text-16 fw-500 mb-30">Nous Contacter</h5>
+
+                      <div class="mt-35">
+                          <div class="text-14 mt-30">Besoin d'aide ?</div>
+                          <a href="#" class="text-18 fw-500 text-blue-1 mt-5">team@MixOne.com</a>
+                      </div>
+                  </div>
+
+                  <div class="col-xl-2 col-lg-4 col-sm-6">
+                      <h5 class="text-16 fw-500 mb-30">Entreprise</h5>
+                      <div class="d-flex y-gap-10 flex-column">
+                          <a href="about.html">A propos</a>
+                          <a href="about.html">Careers</a>
+                          <a href="contact.html">Nous rejoindre</a>
+
+
+                      </div>
+                  </div>
+
+                  <div class="col-xl-2 col-lg-4 col-sm-6">
+                      <h5 class="text-16 fw-500 mb-30">Support</h5>
+                      <div class="d-flex y-gap-10 flex-column">
+                          <a href="contact.html">Contact</a>
+                          <a href="terms.html">Mentions Legales</a>
+                          <a href="terms.html">Politique de Confidentialité</a>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <div class="py-20 border-top-light">
+              <div class="row justify-between items-center y-gap-10">
+                  <div class="col-auto">
+                      <div class="row x-gap-30 y-gap-10">
+                          <div class="col-auto">
+                              <div class="d-flex items-center">
+                                  © 2025 MixOne LLC All rights reserved.
+                              </div>
+                          </div>
+
+                          <div class="col-auto">
+                              <div class="d-flex x-gap-15">
+                                  <a href="terms.html">Confidentialité</a>
+                                  <a href="terms.html">Termes</a>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div class="col-auto">
+                      <div class="row y-gap-10 items-center">
+                          <div class="col-auto">
+                              <div class="d-flex items-center">
+                                  <button class="d-flex items-center text-14 fw-500 text-dark-1 mr-10">
+                                      <i class="icon-globe text-16 mr-10"></i>
+                                      <span class="underline">English (US)</span>
+                                  </button>
+
+                                  <button class="d-flex items-center text-14 fw-500 text-dark-1">
+                                      <i class="icon-usd text-16 mr-10"></i>
+                                      <span class="underline">USD</span>
+                                  </button>
+                              </div>
+                          </div>
+
+                          <div class="col-auto">
+                              <div class="d-flex x-gap-20 items-center">
+                                  <a href="#"><i class="icon-facebook text-14"></i></a>
+                                  <a href="#"><i class="icon-twitter text-14"></i></a>
+                                  <a href="#"><i class="icon-instagram text-14"></i></a>
+                                  <a href="#"><i class="icon-linkedin text-14"></i></a>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const slider = document.getElementById('distanceSlider');
+        const lowerValue = document.querySelector(".js-lower");
+        const upperValue = document.querySelector(".js-upper");
+        
+        if (slider) {
+            noUiSlider.create(slider, {
+                start: [<?= $max_distance ?>],
+                connect: [true, false],
+                range: {
+                    'min': 0,
+                    'max': 200
+                },
+                step: 5,
+                format: {
+                    to: function (value) {
+                        return Math.round(value) + "km";
+                    },
+                    from: function (value) {
+                        return Number(value.replace("km", ""));
+                    }
+                }
+            });
+
+            slider.noUiSlider.on("update", function (values) {
+                lowerValue.textContent = "0km";
+                upperValue.textContent = values[0];
+                document.getElementById('distance').value = parseInt(values[0]);
+            });
+        }
+
+        window.toggleHoursMenu = function(event) {
             event.stopPropagation();
             const menu = document.getElementById('hoursMenu');
             menu.classList.toggle('hidden');
         }
 
-        function changeHours(amount) {
+        window.changeHours = function(amount) {
             const hoursInput = document.getElementById('min_hours');
             const hoursValue = document.getElementById('hoursValue');
             let currentValue = parseInt(hoursValue.textContent);
@@ -240,386 +727,78 @@ if (isset($_SESSION['user'])) {
             }
         });
 
-        document.getElementById('hoursMenu').addEventListener('click', function(event) {
-            event.stopPropagation();
+        window.getUserLocation = function(callback) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById('latitude').value = position.coords.latitude;
+                    document.getElementById('longitude').value = position.coords.longitude;
+                    console.log("Position GPS récupérée:", position.coords.latitude, position.coords.longitude);
+                    if (callback) callback();
+                }, function(error) {
+                    console.warn("Erreur GPS:", error.message);
+                    if (callback) callback();
+                });
+            } else {
+                console.warn("Géolocalisation non supportée");
+                if (callback) callback();
+            }
+        }
+
+        window.getCoordinatesFromCity = function(city, callback) {
+            if (!city) {
+                if (callback) callback();
+                return;
+            }
+            
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        document.getElementById('latitude').value = data[0].lat;
+                        document.getElementById('longitude').value = data[0].lon;
+                        console.log("Coordonnées de la ville:", data[0].lat, data[0].lon);
+                    } else {
+                        console.warn("Ville non trouvée!");
+                    }
+                    if (callback) callback();
+                })
+                .catch(error => {
+                    console.error("Erreur API:", error);
+                    if (callback) callback();
+                });
+        }
+
+        document.getElementById('searchForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const city = document.getElementById('city').value.trim();
+            const min_hours = document.getElementById('min_hours').value;
+            const distance = document.getElementById('distance').value;
+            
+            if (city !== "") {
+                getCoordinatesFromCity(city, () => this.submit());
+            } else {
+                getUserLocation(() => this.submit());
+            }
         });
-    </script>
 
-<?php
-if (session_status() === PHP_SESSION_NONE) {
-  session_start();
-}
+        const hasSearch = <?= !empty($_GET) ? 'true' : 'false' ?>;
+        const hasCoordinates = <?= ($user_lat && $user_lon) ? 'true' : 'false' ?>;
+        
+        if (!hasSearch && !hasCoordinates) {
+            setTimeout(function() {
+                if (confirm("Voulez-vous utiliser votre position actuelle pour trouver les studios à proximité?")) {
+                    getUserLocation();
+                }
+            }, 1000);
+        }
+    });
+  </script>
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-
-$dsn = 'mysql:dbname=onemix;host=127.0.0.1:8889';
-$user = 'root';
-$password = 'root';
-
-try {
-    $pdo = new PDO($dsn, $user, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("Erreur de connexion à la base de données : " . $e->getMessage());
-}
-
-$city = isset($_GET['city']) ? trim($_GET['city']) : '';
-$min_hours = isset($_GET['min_hours']) ? intval($_GET['min_hours']) : 0;
-
-$sql = "SELECT * FROM studios WHERE city LIKE :city AND min_hours >= :min_hours";
-$stmt = $pdo->prepare($sql);
-$stmt->execute(['city' => "%$city%", 'min_hours' => $min_hours]);
-$studios = $stmt->fetchAll(PDO::FETCH_ASSOC);
-?>
-
-<!-- Afficher les résultats de la recherche -->
-<section class="layout-pt-md layout-pb-md">
-    <div data-anim="slide-up delay-1" class="container">
-        <div class="row y-gap-10 justify-between items-end">
-            <div class="col-auto">
-                <div class="sectionTitle -md">
-                    <h2 class="sectionTitle__title">Résultats de la recherche</h2>
-                    <p class="sectionTitle__text mt-5 sm:mt-0">Studios correspondant à vos critères</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="relative overflow-hidden pt-40 sm:pt-20">
-            <div class="row y-gap-30">
-                <?php if (empty($studios)) : ?>
-                    <div class="col-12">
-                        <p class="text-center">Aucun studio trouvé.</p>
-                    </div>
-                <?php else : ?>
-                    <?php foreach ($studios as $studio) : ?>
-                        <div class="col-xl-3 col-lg-4 col-sm-6">
-                            <a href="#" class="hotelsCard -type-1">
-                                <div class="hotelsCard__image">
-                                    <div class="cardImage ratio ratio-1:1">
-                                        <div class="cardImage__content">
-                                            <img class="col-12" src="img/backgrounds/11.jpg" alt="<?= htmlspecialchars($studio['name']) ?>">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="hotelsCard__content mt-10">
-                                    <h4 class="hotelsCard__title text-dark-1 text-18 lh-16 fw-500">
-                                        <?= htmlspecialchars($studio['name']) ?>
-                                    </h4>
-                                    <p class="text-light-1 lh-14 text-14 mt-5"><?= htmlspecialchars($studio['city']) ?></p>
-                                    <div class="d-flex items-center mt-20">
-                                        <div class="flex-center bg-blue-1 rounded-4 size-30 text-12 fw-600 text-white">4.8</div>
-                                        <div class="text-14 text-dark-1 fw-500 ml-10">Exceptional</div>
-                                        <div class="text-14 text-light-1 ml-10">3,014 reviews</div>
-                                    </div>
-                                    <div class="mt-5">
-                                        <div class="fw-500">
-                                            A Partir de <span class="text-blue-1"><?= htmlspecialchars($studio['hourly_rate']) ?>€</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-</section>
-
-    <section class="layout-pt-md layout-pb-lg">
-      <div data-anim-wrap class="container">
-        <div class="row y-gap-20 justify-between">
-
-          <div data-anim-child="slide-up delay-1" class="col-lg-3 col-sm-6">
-
-            <div class="featureIcon -type-1 ">
-              <div class="d-flex justify-center">
-                <img src="#" data-src="img/featureIcons/1/1.svg" alt="image" class="js-lazy">
-              </div>
-
-              <div class="text-center mt-30">
-                <h4 class="text-18 fw-500">Best Price Guarantee</h4>
-                <p class="text-15 mt-10">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-              </div>
-            </div>
-
-          </div>
-
-          <div data-anim-child="slide-up delay-2" class="col-lg-3 col-sm-6">
-
-            <div class="featureIcon -type-1 ">
-              <div class="d-flex justify-center">
-                <img src="#" data-src="img/featureIcons/1/2.svg" alt="image" class="js-lazy">
-              </div>
-
-              <div class="text-center mt-30">
-                <h4 class="text-18 fw-500">Easy & Quick Booking</h4>
-                <p class="text-15 mt-10">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-              </div>
-            </div>
-
-          </div>
-
-          <div data-anim-child="slide-up delay-3" class="col-lg-3 col-sm-6">
-
-            <div class="featureIcon -type-1 ">
-              <div class="d-flex justify-center">
-                <img src="#" data-src="img/featureIcons/1/3.svg" alt="image" class="js-lazy">
-              </div>
-
-              <div class="text-center mt-30">
-                <h4 class="text-18 fw-500">Customer Care 24/7</h4>
-                <p class="text-15 mt-10">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <section class="layout-pt-lg layout-pb-lg bg-blue-2">
-      <div data-anim-wrap class="container">
-        <div class="row y-gap-40 justify-between">
-          <div data-anim-child="slide-up delay-1" class="col-xl-5 col-lg-6">
-            <h2 class="text-30">What our customers are<br> saying us?</h2>
-            <p class="mt-20">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas varius tortor nibh, sit amet tempor nibh finibus et. Aenean eu enim justo.</p>
-
-            <div class="row y-gap-30 pt-60 lg:pt-40">
-              <div class="col-sm-5 col-6">
-                <div class="text-30 lh-15 fw-600">13m+</div>
-                <div class="text-light-1 lh-15">Happy People</div>
-              </div>
-
-              <div class="col-sm-5 col-6">
-                <div class="text-30 lh-15 fw-600">4.88</div>
-                <div class="text-light-1 lh-15">Overall rating</div>
-
-                <div class="d-flex x-gap-5 items-center pt-10">
-
-                  <div class="icon-star text-blue-1 text-10"></div>
-
-                  <div class="icon-star text-blue-1 text-10"></div>
-
-                  <div class="icon-star text-blue-1 text-10"></div>
-
-                  <div class="icon-star text-blue-1 text-10"></div>
-
-                  <div class="icon-star text-blue-1 text-10"></div>
-
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div data-anim-child="slide-up delay-2" class="col-lg-6">
-            <div class="overflow-hidden js-testimonials-slider-3" data-scrollbar>
-              <div class="swiper-wrapper">
-
-                <div class="swiper-slide">
-                  <div class="row items-center x-gap-30 y-gap-20">
-                    <div class="col-auto">
-                      <img src="#" data-src="img/avatars/1.png" alt="image" class="js-lazy">
-                    </div>
-
-                    <div class="col-auto">
-                      <h5 class="text-16 fw-500">Annette Black</h5>
-                      <div class="text-15 text-light-1 lh-15">UX / UI Designer</div>
-                    </div>
-                  </div>
-
-                  <p class="text-18 fw-500 text-dark-1 mt-30 sm:mt-20">The place is in a great location in Gumbet. The area is safe and beautiful. The apartment was comfortable and the host was kind and responsive to our requests.</p>
-                </div>
-
-                <div class="swiper-slide">
-                  <div class="row items-center x-gap-30 y-gap-20">
-                    <div class="col-auto">
-                      <img src="#" data-src="img/avatars/1.png" alt="image" class="js-lazy">
-                    </div>
-
-                    <div class="col-auto">
-                      <h5 class="text-16 fw-500">Annette Black</h5>
-                      <div class="text-15 text-light-1 lh-15">UX / UI Designer</div>
-                    </div>
-                  </div>
-
-                  <p class="text-18 fw-500 text-dark-1 mt-30 sm:mt-20">The place is in a great location in Gumbet. The area is safe and beautiful. The apartment was comfortable and the host was kind and responsive to our requests.</p>
-                </div>
-
-                <div class="swiper-slide">
-                  <div class="row items-center x-gap-30 y-gap-20">
-                    <div class="col-auto">
-                      <img src="#" data-src="img/avatars/1.png" alt="image" class="js-lazy">
-                    </div>
-
-                    <div class="col-auto">
-                      <h5 class="text-16 fw-500">Annette Black</h5>
-                      <div class="text-15 text-light-1 lh-15">UX / UI Designer</div>
-                    </div>
-                  </div>
-
-                  <p class="text-18 fw-500 text-dark-1 mt-30 sm:mt-20">The place is in a great location in Gumbet. The area is safe and beautiful. The apartment was comfortable and the host was kind and responsive to our requests.</p>
-                </div>
-
-              </div>
-
-              <div class="d-flex items-center mt-60 sm:mt-20 js-testimonials-slider-pag">
-                <div class="text-dark-1 fw-500 js-current">01</div>
-                <div class="slider-scrollbar bg-border ml-20 mr-20 w-max-300 js-scrollbar"></div>
-                <div class="text-dark-1 fw-500 js-all">05</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-
-    <section class="layout-pt-md layout-pb-md bg-dark-2">
-      <div class="container">
-        <div class="row y-gap-30 justify-between items-center">
-          <div class="col-auto">
-            <div class="row y-gap-20  flex-wrap items-center">
-              <div class="col-auto">
-                <div class="icon-newsletter text-60 sm:text-40 text-white"></div>
-              </div>
-
-              <div class="col-auto">
-                <h4 class="text-26 text-white fw-600">Your Travel Journey Starts Here</h4>
-                <div class="text-white">Sign up and we'll send the best deals to you</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-auto">
-            <div class="single-field -w-410 d-flex x-gap-10 y-gap-20">
-              <div>
-                <input class="bg-white h-60" type="text" placeholder="Your Email">
-              </div>
-
-              <div>
-                <button class="button -md h-60 bg-blue-1 text-white">Subscribe</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <footer class="footer -type-1">
-      <div class="container">
-        <div class="pt-60 pb-60">
-          <div class="row y-gap-40 justify-between xl:justify-start">
-            <div class="col-xl-2 col-lg-4 col-sm-6">
-              <h5 class="text-16 fw-500 mb-30">Contact Us</h5>
-
-              <div class="mt-35">
-                <div class="text-14 mt-30">Need live support?</div>
-                <a href="#" class="text-18 fw-500 text-blue-1 mt-5">hi@gotrip.com</a>
-              </div>
-            </div>
-
-            <div class="col-xl-2 col-lg-4 col-sm-6">
-              <h5 class="text-16 fw-500 mb-30">Company</h5>
-              <div class="d-flex y-gap-10 flex-column">
-                <a href="#">About Us</a>
-                <a href="#">Careers</a>
-                <a href="#">Blog</a>
-                <a href="#">Press</a>
-                <a href="#">Gift Cards</a>
-                <a href="#">Magazine</a>
-              </div>
-            </div>
-
-            <div class="col-xl-2 col-lg-4 col-sm-6">
-              <h5 class="text-16 fw-500 mb-30">Support</h5>
-              <div class="d-flex y-gap-10 flex-column">
-                <a href="#">Contact</a>
-                <a href="#">Legal Notice</a>
-                <a href="#">Privacy Policy</a>
-                <a href="#">Terms and Conditions</a>
-                <a href="#">Sitemap</a>
-              </div>
-            </div>
-
-            <div class="col-xl-2 col-lg-4 col-sm-6">
-              <h5 class="text-16 fw-500 mb-30">Other Services</h5>
-              <div class="d-flex y-gap-10 flex-column">
-                <a href="#">Car hire</a>
-                <a href="#">Activity Finder</a>
-                <a href="#">Tour List</a>
-                <a href="#">Flight finder</a>
-                <a href="#">Cruise Ticket</a>
-                <a href="#">Holiday Rental</a>
-                <a href="#">Travel Agents</a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="py-20 border-top-light">
-          <div class="row justify-between items-center y-gap-10">
-            <div class="col-auto">
-              <div class="row x-gap-30 y-gap-10">
-                <div class="col-auto">
-                  <div class="d-flex items-center">
-                    © 2025 MixOne LLC All rights reserved.
-                  </div>
-                </div>
-
-                <div class="col-auto">
-                  <div class="d-flex x-gap-15">
-                    <a href="#">Privacy</a>
-                    <a href="#">Terms</a>
-                    <a href="#">Site Map</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-auto">
-              <div class="row y-gap-10 items-center">
-                <div class="col-auto">
-                  <div class="d-flex items-center">
-                    <button class="d-flex items-center text-14 fw-500 text-dark-1 mr-10">
-                      <i class="icon-globe text-16 mr-10"></i>
-                      <span class="underline">English (US)</span>
-                    </button>
-
-                    <button class="d-flex items-center text-14 fw-500 text-dark-1">
-                      <i class="icon-usd text-16 mr-10"></i>
-                      <span class="underline">USD</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="col-auto">
-                  <div class="d-flex x-gap-20 items-center">
-                    <a href="#"><i class="icon-facebook text-14"></i></a>
-                    <a href="#"><i class="icon-twitter text-14"></i></a>
-                    <a href="#"><i class="icon-instagram text-14"></i></a>
-                    <a href="#"><i class="icon-linkedin text-14"></i></a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </footer>
-
-  </main>
-
-
-  <!-- JavaScript -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAAz77U5XQuEME6TpftaMdX0bBelQxXRlM"></script>
   <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
-
   <script src="js/vendors.js"></script>
   <script src="js/main.js"></script>
 </body>
