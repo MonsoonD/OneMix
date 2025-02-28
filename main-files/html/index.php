@@ -1,10 +1,8 @@
 <?php
-session_start(); // Démarrer la session
+session_start(); 
 
 if (isset($_SESSION['user'])) {
-    // L'utilisateur est connecté
     $user = $_SESSION['user'];
-
 }
 ?>
 
@@ -72,11 +70,19 @@ if (isset($_SESSION['user'])) {
 
                   <li class="subnav__backBtn js-nav-list-back">
 
-                        <li><a href="index.html">Home</a></li>
+                        <li><a href="index.php">Home</a></li>
 
 
                         <li class="subnav__backBtn js-nav-list-back">
                         <li><a href="db-dashboard.php">Dashboard</a></li>
+                <div class="pl-15">
+                  <?php if (!empty($_SESSION['user']['profile_image'])): ?>
+                      <img src="uploads/<?php echo htmlspecialchars($_SESSION['user']['profile_image']); ?>" alt="image" class="size-50 rounded-22 object-cover">
+                  <?php else: ?>
+                      <img src="img/avatars/3.png" alt="image" class="size-50 rounded-22 object-cover">
+                  <?php endif; ?>
+                </div>
+                
                   </ul>
                 </div>
 
@@ -114,10 +120,20 @@ if (isset($_SESSION['user'])) {
             </div>
 
 
-            <div class="d-flex items-center ml-20 is-menu-opened-hide md:d-none">
-              <a href="login.php" class="button px-30 fw-400 text-14 -white bg-white h-50 text-dark-1">Become A Confirmed Studio</a>
-              <a href="signup.php" class="button px-30 fw-400 text-14 border-white -outline-white h-50 text-white ml-20">Sign In / Register</a>
-            </div>
+        <div class="d-flex items-center ml-20 is-menu-opened-hide md:d-none">
+          <?php if(isset($_SESSION['user'])): ?>
+            <a href="logout.php" class="button px-30 fw-400 text-14 -white bg-white h-50 text-dark-1">Déconnexion</a>
+          <?php else: ?>
+            <a href="login.php" class="button px-30 fw-400 text-14 -white bg-white h-50 text-dark-1">Se connecter</a>
+            <a href="signup.php" class="button px-30 fw-400 text-14 border-white -outline-white h-50 text-white ml-20">Créer un compte</a>
+          <?php endif; ?>
+      </div>
+      
+      <div class="d-flex items-center ml-20 is-menu-opened-hide md:d-none">
+        <?php if(isset($_SESSION['user'])): ?>
+          <a href="profile.php" class="button px-30 fw-400 text-14 border-white -outline-white h-50 text-white ml-20">Modifier le compte </a>
+          <?php endif; ?>
+          </div>
 
             <div class="d-none xl:d-flex x-gap-20 items-center pl-30 text-white" data-x="header-mobile-icons" data-x-toggle="text-white">
               <div><a href="login.php" class="d-flex items-center icon-user text-inherit text-22"></a></div>
@@ -255,9 +271,9 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 
-$dsn = 'mysql:dbname=onemix;host=127.0.0.1:8889';
+$dsn = 'mysql:dbname=onemix;host=127.0.0.1';
 $user = 'root';
-$password = 'root';
+$password = '';
 
 try {
     $pdo = new PDO($dsn, $user, $password);

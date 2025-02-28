@@ -1,8 +1,8 @@
 <?php
 
-$dsn = 'mysql:dbname=onemix;host=127.0.0.1:8889';
+$dsn = 'mysql:dbname=onemix;host=127.0.0.1';
 $user = 'root';
-$password = 'root';
+$password = '';
 $pdo = new PDO($dsn, $user, $password);
 
 if (count($_POST) > 0) {
@@ -24,12 +24,13 @@ if (count($_POST) > 0) {
     echo "Les mots de passes diffèrent!";
   }
 
-  if ($error=false) {
+  if (!$error) {
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
     $sql = "INSERT INTO users (profile, first_name, last_name, email, password) VALUES (?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$profile, $firstName, $lastName, $email, $hashedPassword]);
     echo "Inscription réussie!";
+    header('Location: login.php');
   }
   else {
     echo "Inscription échouée!";
