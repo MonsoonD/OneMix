@@ -107,7 +107,7 @@ if ($has_coordinates) {
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
 
-  <title>MixOne</title>
+  <title>OneMix</title>
 </head>
 
 <body>
@@ -154,18 +154,11 @@ if ($has_coordinates) {
                   <li class="subnav__backBtn js-nav-list-back">
 
                         <li><a href="index.php">Home</a></li>
-                        <li><a href="index.php">Home</a></li>
 
 
                         <li class="subnav__backBtn js-nav-list-back">
                         <li><a href="db-dashboard.php">Dashboard</a></li>
-                <div class="pl-15">
-                  <?php if (!empty($_SESSION['user']['profile_image'])): ?>
-                      <img src="uploads/<?php echo htmlspecialchars($_SESSION['user']['profile_image']); ?>" alt="image" class="size-50 rounded-22 object-cover">
-                  <?php else: ?>
-                      <img src="img/avatars/3.png" alt="image" class="size-50 rounded-22 object-cover">
-                  <?php endif; ?>
-                </div>
+            
                 
                   </ul>
                 </div>
@@ -299,7 +292,6 @@ if ($has_coordinates) {
                                             </div>
                                         </div>
 
-                                        <!-- Bouton de recherche -->
                                         <div class="button-item">
                                             <button type="submit" class="mainSearch__submit button -dark-1 h-60 px-35 col-12 rounded-100 bg-blue-1 text-white">
                                                 <i class="icon-search text-20 mr-10"></i>

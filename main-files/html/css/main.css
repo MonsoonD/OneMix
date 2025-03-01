@@ -12017,3 +12017,30 @@ table.table-5 td {
   background-color: var(--color-light-2);
   z-index: -2;
 }
+
+
+.hidden {
+  display: none;
+}
+.hours-menu {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  position: absolute;
+  background: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  z-index: 1000;
+  top: 100%;
+  left: 0;
+}
+.distance-badge {
+  display: inline-block;
+  background-color: #e9f5ff;
+  color: #3554D1;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-left: 5px;
+}

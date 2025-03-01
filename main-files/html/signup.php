@@ -1,9 +1,24 @@
 <?php
 
-$dsn = 'mysql:dbname=onemix;host=127.0.0.1';
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+$dsn = 'mysql:dbname=onemix;host=127.0.0.1:8889';
 $user = 'root';
-$password = '';
-$pdo = new PDO($dsn, $user, $password);
+$password = 'root';
+
+try {
+    $pdo = new PDO($dsn, $user, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erreur de connexion à la base de données : " . $e->getMessage());
+}
+
 
 if (count($_POST) > 0) {
   $error = false;
